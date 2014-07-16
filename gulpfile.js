@@ -3,12 +3,11 @@ var plugins = require('gulp-load-plugins')();
 var through = require('through2');
 var combined = require("combined-stream");
 var minimatch = require("minimatch");
-var path  = require('path');
-var gutil = require('gulp-util');
 var child = require('child_process');
 var runSequence = require('run-sequence');
 
-function modularise(outputPattern, mapSources) {
+function modularise(outputPattern, errorFunc) {
+  errorFunc = errorFunc || function(value) { return value };
   return through.obj(function(file, encoding, done) {
     var stream = this;
     if (file.isNull()) {
@@ -17,24 +16,17 @@ function modularise(outputPattern, mapSources) {
     } else {
       var filename = file.path.split(/[\\\/]/).pop();
       var outPath  = outputPattern.replace('{filename}', filename);
-      var cmd      = 'traceur --sourcemap --out ' + outPath + ' ' + file.path;
-      var fileOut;
-      child.exec(cmd, function (error, stdout, stderr) {
+      child.execFile('traceur', [ '--sourcemap', '--out', outPath, file.path ], function(error, stdout, stdin) {
         if (error) {
           var content = error.toString().replace('Error: Command failed: ', '')
-          console.log(content)
+          console.log('------------------\n' + errorFunc(content));
           done();
         } else {
           gulp.src(outPath.replace('js', '*'))
             .on('data', function(file) {
-              if (!fileOut) {
-                fileOut = file;
-              } else {
-                fileOut.sourceMap = JSON.parse(file.contents.toString());
-              }
+              stream.push(file);
             })
             .on('end', function() {
-              stream.push(fileOut);
               done();
             });
         }
@@ -70,6 +62,9 @@ function locateMapSources() {
         this.push(file); done();
       });
     },
+    replace: function(value) {
+      return value;
+    },
     process: function() {
       return through.obj(function(file, encode, done){
         this.push(file); done();
@@ -92,7 +87,7 @@ gulp.task('default', function() {
 
 // clean the temp directory
 gulp.task('js:cleantemp', function() {
-  gulp.src(temp)
+  return gulp.src(temp)
     .pipe(plugins.clean());
 })
 
@@ -117,7 +112,7 @@ gulp.task('js:transpile', function() {
   gulp.src(jsSrc + '/**/*.js')
     .pipe(plugins.jshint('.jshintrc'))
     .pipe(plugins.jshint.reporter('default'))
-    .pipe(modularise(temp + '/all.{filename}', sourceMapFix))
+    .pipe(modularise(temp + '/all.{filename}', sourceMapFix.replace.bind(sourceMapFix)))
     .pipe(gulp.dest(jsBuild))
     .pipe(selectSourceMaps)
     .pipe(sourceMapFix.process());
