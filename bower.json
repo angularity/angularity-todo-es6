@@ -1,0 +1,7 @@
+{
+  "name": "es6-modular",
+  "dependencies": {
+    "jquery": "latest",
+    "traceur-runtime": "latest"
+  }
+}
