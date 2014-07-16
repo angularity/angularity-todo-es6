@@ -20,14 +20,19 @@
     "path": "latest",
     "format-json": "latest",
     "traceur": "latest",
+    "through2": "latest",
+    "stream-spigot": "latest",
+    "combined-stream": "latest",
+    "minimatch": "latest",
     "gulp": "latest",
     "gulp-util": "latest",
-    "gulp-bower": "latest",
     "gulp-clean": "latest",
     "gulp-jshint": "latest",
     "gulp-plumber": "latest",
     "gulp-sourcemaps": "latest",
     "gulp-filter": "latest",
+    "gulp-rename": "latest",
+    "gulp-load-plugins": "latest",
     "gulp-rename": "latest"
   }
 }

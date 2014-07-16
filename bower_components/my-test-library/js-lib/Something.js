@@ -4,8 +4,8 @@ export class Something {
     greet('Something(lib)Constructor');
   }
 
-  function greet(message) {
-    console.log('Something(lib) says : ' + message)
+  greet(message) {
+    console.log('Something(lib) says : ' + message);
   }
 
 }

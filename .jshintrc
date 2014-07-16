@@ -1,0 +1,10 @@
+{
+  "camelcase" : true,
+  "indent": 2,
+  "undef": false,
+  "quotmark": "single",
+  "maxlen": 120,
+  "trailing": true,
+  "curly": true,
+  "esnext": true
+}

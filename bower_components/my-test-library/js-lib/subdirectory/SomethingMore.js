@@ -6,7 +6,7 @@ export class SomethingMore extends Something {
     greet('SomethingMore(lib)Constructor');
   }
 
-  function greet(message) {
+  greet(message) {
     super.greet(message);
     console.log('SomethingMore(lib) says : ' + message)
   }
