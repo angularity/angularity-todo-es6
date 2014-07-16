@@ -19,7 +19,7 @@ function modularise(outputPattern, errorFunc) {
       child.execFile('traceur', [ '--sourcemap', '--out', outPath, file.path ], function(error, stdout, stdin) {
         if (error) {
           var content = error.toString().replace('Error: Command failed: ', '')
-          console.log('------------------\n' + errorFunc(content));
+          errorFunc(content);
           done();
         } else {
           gulp.src(outPath.replace('js', '*'))
@@ -51,24 +51,42 @@ function rebaseTo() {
 }
 
 function locateMapSources() {
+  var before = [ ];
+  var after  = [ ];
+  function copy(file) {
+    return { path: file.path, cwd: file.cwd };
+  }
   return {
     before: function() {
       return through.obj(function(file, encode, done){
-        this.push(file); done();
+        before.push(copy(file));
+        this.push(file);
+        done();
       });
     },
     after: function() {
       return through.obj(function(file, encode, done){
-        this.push(file); done();
+        after.push(copy(file));
+        this.push(file);
+        done();
       });
-    },
-    replace: function(value) {
-      return value;
     },
     process: function() {
       return through.obj(function(file, encode, done){
-        this.push(file); done();
+        this.push(file);
+// TODO fix source maps
+console.log('TODO: ' + file.path)
+        done();
       });
+    },
+    replace: function(text) {
+      for (var i = 0; i < before.length && i < after.length; i++) {
+        text = text.replace(
+          new RegExp(after[i].path, 'g'),
+          before[i].path.replace(before[i].cwd, '')
+        );
+      }
+      return text;
     }
   }
 }
@@ -112,7 +130,9 @@ gulp.task('js:transpile', function() {
   gulp.src(jsSrc + '/**/*.js')
     .pipe(plugins.jshint('.jshintrc'))
     .pipe(plugins.jshint.reporter('default'))
-    .pipe(modularise(temp + '/all.{filename}', sourceMapFix.replace.bind(sourceMapFix)))
+    .pipe(modularise(temp + '/all.{filename}', function(text) {
+      console.log('>>>>>>>>\n' + sourceMapFix.replace(text));
+    }))
     .pipe(gulp.dest(jsBuild))
     .pipe(selectSourceMaps)
     .pipe(sourceMapFix.process());
