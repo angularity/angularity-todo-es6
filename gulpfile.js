@@ -145,11 +145,13 @@ var jsLibBower = 'bower_components/*/js-lib';
 var jsLibSrc   = 'src/js-lib';
 var jsSrc      = 'src/js';
 var jsBuild    = 'build/js';
+var htmlSrc    = 'src'
+var htmlBuild  = 'build'
 
 var sourceTracking;
 
 gulp.task('default', function() {
-  runSequence('js:hint', 'js:cleantemp', 'js:copylibs', 'js:transpile', 'js:cleantemp', 'server');
+  runSequence('js:hint', 'js:cleantemp', 'js:copylibs', 'js:transpile', 'js:cleantemp', 'html', 'server');
 });
 
 // run js-hint on local sources
@@ -192,6 +194,11 @@ gulp.task('js:transpile', function() {
     .pipe(adjustSourceMaps(sourceTracking.replace))
     .pipe(selectSourceMaps.restore({ end: true }))
     .pipe(gulp.dest(jsBuild));
+});
+
+gulp.task('html', function() {
+  gulp.src(htmlSrc + '/*.html')
+    .pipe(gulp.dest(htmlBuild));
 });
 
 gulp.task('server', function(next) {
