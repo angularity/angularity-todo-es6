@@ -24,6 +24,7 @@
     "combined-stream": "latest",
     "minimatch": "latest",
     "connect": "~2.14.5",
+    "wiredep": "latest",
     "gulp": "latest",
     "gulp-clean": "latest",
     "gulp-jshint": "latest",
@@ -32,6 +33,7 @@
     "gulp-filter": "latest",
     "gulp-rename": "latest",
     "gulp-load-plugins": "latest",
-    "gulp-rename": "latest"
+    "gulp-rename": "latest",
+    "gulp-inject": "latest"
   }
 }

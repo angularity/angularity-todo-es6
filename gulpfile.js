@@ -5,7 +5,10 @@ var combined = require("combined-stream");
 var minimatch = require("minimatch");
 var child = require('child_process');
 var runSequence = require('run-sequence');
+var wiredep = require('wiredep');
 var connect = require('connect');
+var spigot = require('stream-spigot');
+var fs = require('fs');
 
 function modularise(outputPattern, errorFunc) {
   var output = [ ];
@@ -31,13 +34,11 @@ function modularise(outputPattern, errorFunc) {
           }
           message = message.replace(new RegExp(file.cwd, 'g'), '');
           output.push(message);
-          done();
         } else {
           gulp.src(outPath.replace('js', '*'))
             .on('data', function(file) {
               stream.push(file);
-            })
-            .on('end', function() {
+            }).on('end', function() {
               done();
             });
         }
@@ -140,6 +141,24 @@ function adjustSourceMaps(replacer) {
   });
 }
 
+function injectAppJS(htmlBase, jsBase) {
+  return through.obj(function(file, encoding, done) {
+    var stream   = this;
+    var analysis = /^(.*)[\\\/](.*)\.html$/.exec(file.path);
+    var path     = analysis[1];
+    var name     = analysis[2];
+    var target   = path.replace(htmlBase, jsBase) + '/all.' + name + '.js';
+    spigot.array({ objectMode: true }, [ file ])
+      .pipe(plugins.inject(gulp.src(target, { read: false })))
+      .on('data', function(file) {
+        stream.push(file);
+      })
+      .on('end', function() {
+        done();
+      });
+  })
+}
+
 var temp       = '.build'
 var jsLibBower = 'bower_components/*/js-lib';
 var jsLibSrc   = 'src/js-lib';
@@ -197,13 +216,15 @@ gulp.task('js:transpile', function() {
 });
 
 gulp.task('html', function() {
-  gulp.src(htmlSrc + '/*.html')
+  return gulp.src(htmlSrc + '/**/*.html')
+    .pipe(injectAppJS(htmlSrc, jsBuild))
+    .pipe(wiredep.stream())
     .pipe(gulp.dest(htmlBuild));
 });
 
 gulp.task('server', function(next) {
   connect()
-    .use(connect.static('build'))
+    .use('/build', connect.static('build'))
     .use('/bower_components', connect.static('bower_components'))
     .use('/src', connect.static('src'))
     .listen(8000, next);
