@@ -5,9 +5,10 @@ var combined = require("combined-stream");
 var minimatch = require("minimatch");
 var child = require('child_process');
 var runSequence = require('run-sequence');
+var connect = require('connect');
 
 function modularise(outputPattern, errorFunc) {
-  errorFunc = errorFunc || function(value) { return value };
+  var output = [ ];
   return through.obj(function(file, encoding, done) {
     var stream = this;
     if (file.isNull()) {
@@ -18,8 +19,18 @@ function modularise(outputPattern, errorFunc) {
       var outPath  = outputPattern.replace('{filename}', filename);
       child.execFile('traceur', [ '--sourcemap', '--out', outPath, file.path ], function(error, stdout, stdin) {
         if (error) {
-          var content = error.toString().replace('Error: Command failed: ', '')
-          errorFunc(content);
+          var text     = error.toString();
+          var analysis = /[^].*Specified as (.*)\.\nImported by \.{0,2}(.*)\.\n/m.exec(text);
+          var message;
+          if (analysis) {
+            var specified = analysis[1];
+            var filename  = analysis[2];
+            message = filename + ': Import not found: ' + specified + '\n';
+          } else {
+            message = text.replace(/Error\:\s*Command failed\:\s*/g, '');
+          }
+          message = message.replace(new RegExp(file.cwd, 'g'), '');
+          output.push(message);
           done();
         } else {
           gulp.src(outPath.replace('js', '*'))
@@ -32,6 +43,13 @@ function modularise(outputPattern, errorFunc) {
         }
       });
     }
+  }, function(done) {
+    if (output.length) {
+      var text = '\n' + output.join('\n')
+        .replace(/Error\:\s*Command failed\:\s*/g, '');
+      errorFunc(text);
+    }
+    done();
   });
 }
 
@@ -50,11 +68,11 @@ function rebaseTo() {
   });
 }
 
-function locateMapSources() {
+function trackSources() {
   var before = [ ];
   var after  = [ ];
   function copy(file) {
-    return { path: file.path, cwd: file.cwd };
+    return { path: file.path, cwd: file.cwd, relative: file.relative };
   }
   return {
     before: function() {
@@ -71,24 +89,55 @@ function locateMapSources() {
         done();
       });
     },
-    process: function() {
-      return through.obj(function(file, encode, done){
-        this.push(file);
-// TODO fix source maps
-console.log('TODO: ' + file.path)
-        done();
-      });
-    },
     replace: function(text) {
-      for (var i = 0; i < before.length && i < after.length; i++) {
-        text = text.replace(
-          new RegExp(after[i].path, 'g'),
-          before[i].path.replace(before[i].cwd, '')
-        );
+      var generalBase = [ ];
+      for (var i = Math.min(before.length, after.length) - 1; i >= 0; i--) {
+        var rootRelativeBefore = before[i].path.replace(before[i].cwd, '');
+        generalBase.push(after[i].cwd, after[i].path.replace(after[i].relative, ''));
+        text = text.replace(new RegExp(after[i].path, 'g'), rootRelativeBefore);
       }
+      text = text .replace(new RegExp(generalBase.join('|'), 'g'), '');
       return text;
     }
   }
+}
+
+function terseReporter(replacer) {
+  var output = '';
+  var prevfile;
+  return through.obj(function(file, encoding, done) {
+    if (file.jshint && !file.jshint.success && !file.jshint.ignored) {
+      (function reporter(results, data, opts) {
+        results.forEach(function(result) {
+          var filename = result.file.replace(new RegExp(file.cwd, 'g'), '');
+          var error    = result.error;
+          if (prevfile && prevfile !== filename) {
+            output += "\n";
+          }
+          output  += filename + ': line ' + error.line + ', col ' +  error.character + ', ' + error.reason + '\n';
+          prevfile = filename;
+        });
+      })(file.jshint.results, file.jshint.data);
+    }
+    this.push(file);
+    done();
+  }, function(done) {
+    if (output) {
+      console.log('\n' + output);
+    }
+    done();
+  });
+}
+
+function adjustSourceMaps(replacer) {
+  return through.obj(function(file, encoding, done) {
+    var sourceMap = JSON.parse(replacer(file.contents.toString()));
+    delete sourceMap.sourcesContent;
+    var text = JSON.stringify(sourceMap, null, '  ');
+    file.contents = new Buffer(text);
+    this.push(file);
+    done();
+  });
 }
 
 var temp       = '.build'
@@ -97,11 +146,20 @@ var jsLibSrc   = 'src/js-lib';
 var jsSrc      = 'src/js';
 var jsBuild    = 'build/js';
 
-var sourceMapFix;
+var sourceTracking;
 
 gulp.task('default', function() {
-  runSequence('js:cleantemp', 'js:copylibs', 'js:transpile', 'js:cleantemp');
+  runSequence('js:hint', 'js:cleantemp', 'js:copylibs', 'js:transpile', 'js:cleantemp', 'server');
 });
+
+// run js-hint on local sources
+gulp.task('js:hint', function() {
+  return combined.create()
+    .append(gulp.src(jsLibSrc + '/**/*.js'))
+    .append(gulp.src(jsSrc    + '/**/*.js'))
+    .pipe(plugins.jshint('.jshintrc'))
+    .pipe(terseReporter());
+})
 
 // clean the temp directory
 gulp.task('js:cleantemp', function() {
@@ -112,31 +170,34 @@ gulp.task('js:cleantemp', function() {
 // copy libraries from both local and bower sources into the temp directory
 //  keep track of their original location
 gulp.task('js:copylibs', function() {
-  sourceMapFix = locateMapSources();
+  sourceTracking = trackSources();              // begin tracking
   return combined.create()
-    .append(gulp.src(jsLibBower + '/**/*.js'))
-    .append(gulp.src(jsLibSrc   + '/**/*.js'))
-    .pipe(sourceMapFix.before())
+    .append(gulp.src(jsLibBower + '/**/*.js'))  // bower sources first
+    .append(gulp.src(jsLibSrc   + '/**/*.js'))  // local sources overwrite them
+    .pipe(sourceTracking.before())
     .pipe(rebaseTo(jsLibBower, jsLibSrc))
     .pipe(gulp.dest(temp))
-    .pipe(sourceMapFix.after());
+    .pipe(sourceTracking.after());
 });
 
 // resolve all imports for the source files to give a single optimised js file
 //  and source map for each
 gulp.task('js:transpile', function() {
   var selectSourceMaps = plugins.filter('**/*.map');
-  sourceMapFix = sourceMapFix || locateMapSources();
-  gulp.src(jsSrc + '/**/*.js')
-    .pipe(plugins.jshint('.jshintrc'))
-    .pipe(plugins.jshint.reporter('default'))
-    .pipe(modularise(temp + '/all.{filename}', function(text) {
-      console.log('>>>>>>>>\n' + sourceMapFix.replace(text));
+  return gulp.src(jsSrc + '/**/*.js')
+    .pipe(modularise(temp + '/all.{filename}', function(errorText) {
+      console.log(sourceTracking.replace(errorText));
     }))
-    .pipe(gulp.dest(jsBuild))
     .pipe(selectSourceMaps)
-    .pipe(sourceMapFix.process());
+    .pipe(adjustSourceMaps(sourceTracking.replace))
+    .pipe(selectSourceMaps.restore({ end: true }))
+    .pipe(gulp.dest(jsBuild));
+});
 
-  // returned stream needs an end which the filter removed
-  return selectSourceMaps.restore({ end: true });
+gulp.task('server', function(next) {
+  connect()
+    .use(connect.static('build'))
+    .use('/bower_components', connect.static('bower_components'))
+    .use('/src', connect.static('src'))
+    .listen(8000, next);
 });

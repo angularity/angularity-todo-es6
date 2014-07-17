@@ -23,6 +23,7 @@
     "stream-spigot": "latest",
     "combined-stream": "latest",
     "minimatch": "latest",
+    "connect": "~2.14.5",
     "gulp": "latest",
     "gulp-clean": "latest",
     "gulp-jshint": "latest",
