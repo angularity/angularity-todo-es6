@@ -8,7 +8,9 @@ export class SomethingMore extends Something {
 
   greet(message) {
     super.greet(message);
-    window.console.log('SomethingMore(lib) says : ' + message)
+    message = 'SomethingMore(lib) says : ' + message;
+      $('body').append($('<div>').html(message));
+    window.console.log(message)
   }
 
 }

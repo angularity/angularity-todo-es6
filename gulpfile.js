@@ -34,6 +34,7 @@ function modularise(outputPattern, errorFunc) {
           }
           message = message.replace(new RegExp(file.cwd, 'g'), '');
           output.push(message);
+          done();
         } else {
           gulp.src(outPath.replace('js', '*'))
             .on('data', function(file) {
@@ -160,7 +161,7 @@ function injectAppJS(htmlBase, jsBase) {
 }
 
 var temp       = '.build'
-var jsLibBower = 'bower_components/*/js-lib';
+var jsLibBower = 'bower_components/**/js-lib';
 var jsLibSrc   = 'src/js-lib';
 var jsSrc      = 'src/js';
 var jsBuild    = 'build/js';
@@ -170,7 +171,7 @@ var htmlBuild  = 'build'
 var sourceTracking;
 
 gulp.task('default', function() {
-  runSequence('js:hint', 'js:cleantemp', 'js:copylibs', 'js:transpile', 'js:cleantemp', 'html', 'server');
+  runSequence('js:hint', 'js:cleanbuild', 'html:cleanbuild', 'js:cleantemp', 'js:copylibs', 'js:build', 'js:cleantemp', 'html:build', 'server');
 });
 
 // run js-hint on local sources
@@ -188,6 +189,18 @@ gulp.task('js:cleantemp', function() {
     .pipe(plugins.clean());
 })
 
+// clean the build directory
+gulp.task('js:cleanbuild', function() {
+  return gulp.src(jsBuild)
+    .pipe(plugins.clean());
+})
+
+// clean the html build directory
+gulp.task('html:cleanbuild', function() {
+  return gulp.src(htmlBuild)
+    .pipe(plugins.clean());
+})
+
 // copy libraries from both local and bower sources into the temp directory
 //  keep track of their original location
 gulp.task('js:copylibs', function() {
@@ -202,8 +215,8 @@ gulp.task('js:copylibs', function() {
 });
 
 // resolve all imports for the source files to give a single optimised js file
-//  and source map for each
-gulp.task('js:transpile', function() {
+//  in the build directory with source map for each
+gulp.task('js:build', function() {
   var selectSourceMaps = plugins.filter('**/*.map');
   return gulp.src(jsSrc + '/**/*.js')
     .pipe(modularise(temp + '/all.{filename}', function(errorText) {
@@ -215,7 +228,8 @@ gulp.task('js:transpile', function() {
     .pipe(gulp.dest(jsBuild));
 });
 
-gulp.task('html', function() {
+// inject dependencies into html and output to build directory
+gulp.task('html:build', function() {
   return gulp.src(htmlSrc + '/**/*.html')
     .pipe(injectAppJS(htmlSrc, jsBuild))
     .pipe(wiredep.stream())
