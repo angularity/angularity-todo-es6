@@ -9,14 +9,14 @@ var wiredep = require('wiredep');
 var connect = require('connect');
 var spigot = require('stream-spigot');
 var fs = require('fs');
+var slash = require('slash');
 
 function getPathRegExp(source, flags) {
   var adjusted = source.replace(/([:.\\])/g, '\\$1');
   return new RegExp(adjusted, flags);
 }
 
-function modularise(outputPattern, errorFunc) {
-  var output = [ ];
+function transpileES6(outputPattern) {
   return through.obj(function(file, encoding, done) {
     var stream = this;
     if (file.isNull()) {
@@ -25,25 +25,15 @@ function modularise(outputPattern, errorFunc) {
     } else {
       var filename = file.path.split(/\//).pop();
       var outPath  = outputPattern.replace('{filename}', filename);
-	  var command  = [ 'traceur', '--source-maps', '--out', outPath, file.path ].join(' ');
+      var command  = [ 'traceur', '--source-maps', '--out', outPath, file.path ].join(' ');
       child.exec(command, { cwd: file.cwd }, function(error, stdout, stdin) {
         if (error) {
-          var text     = error.toString();
-          var analysis = /[^].*Specified as (.*)\.\nImported by \.{0,2}(.*)\.\n/m.exec(text);
-          var message;
-          if (analysis) {
-            var specified = analysis[1];
-            var filename  = analysis[2];
-            message = filename + ': Import not found: ' + specified + '\n';
-          } else {
-            message = text.replace(/Error\:\s*Command failed\:\s*/g, '');
-          }
-          message = normalisePaths(message.replace(getPathRegExp(file.cwd, 'g'), ''));
-          output.push(message);
+          file.traceurErrors = error.toString();
+          stream.push(file);
           done();
         } else {
           gulp.src(outPath.replace('js', '*'))
-		    .pipe(normalisePaths())
+            .pipe(normalisePaths())
             .on('data', function(file) {
               stream.push(file);
             }).on('end', function() {
@@ -52,12 +42,6 @@ function modularise(outputPattern, errorFunc) {
         }
       });
     }
-  }, function(done) {
-    if (output.length) {
-      var text = '\n' + output.join('\n').replace(/Error\:\s*Command failed\:\s*/g, '') + '\n';
-      errorFunc(text);
-    }
-    done();
   });
 }
 
@@ -110,8 +94,9 @@ function trackSources() {
   }
 }
 
-function terseReporter() {
-  var output = '';
+function jsHintReporter() {
+  var output = [ ];
+  var item   = '';
   var prevfile;
   return through.obj(function(file, encoding, done) {
     if (file.jshint && !file.jshint.success && !file.jshint.ignored) {
@@ -119,10 +104,11 @@ function terseReporter() {
         results.forEach(function(result) {
           var filename = result.file.replace(getPathRegExp(file.cwd, 'g'), '');
           var error    = result.error;
-          if (prevfile && prevfile !== filename) {
-            output += "\n";
+          if ((prevfile) && (prevfile !== filename) && (item) && (output.indexOf(item) < 0)) {
+            output.push(item);
+            item = '';
           }
-          output  += filename + ': line ' + error.line + ', col ' +  error.character + ', ' + error.reason + '\n';
+          item    += filename + ': line ' + error.line + ', col ' +  error.character + ', ' + error.reason + '\n';
           prevfile = filename;
         });
       })(file.jshint.results, file.jshint.data);
@@ -130,17 +116,51 @@ function terseReporter() {
     this.push(file);
     done();
   }, function(done) {
-    if (output) {
-      process.stdout.write('\n' + output + '\n');
+    if ((item) && (output.indexOf(item) < 0)) {
+      output.push(item);
+    }
+    if (output.length) {
+      process.stdout.write('\n' + output.join('\n') + '\n');
     }
     done();
   });
 }
 
-function adjustSourceMaps(replacer) {
+function traceurErrorReporter(sourceTracker) {
+  var output = [ ];
+  return through.obj(function(file, encoding, done) {
+    var text = file.traceurErrors;
+    if (text) {
+      var REGEXP = /[^].*Specified as (.*)\.\nImported by \.{0,2}(.*)\.\n/m;
+      var analysis = REGEXP.exec(text);
+      var message;
+      if (analysis) {
+        var specified = analysis[1];
+        var filename = analysis[2];
+        message = filename + ': Import not found: ' + specified + '\n';
+      } else {
+        message = text.replace(/Error\:\s*Command failed\:\s*/g, '');
+      }
+      var normalised = normalisePaths(message);
+      var unmapped   = sourceTracker.replace(normalised).replace(file.cwd, '');
+      if (output.indexOf(unmapped) < 0) {
+        output.push(unmapped);
+      }
+    }
+    this.push(file);
+    done();
+  }, function(done) {
+    if (output.length) {
+      process.stdout.write('\n' + output.join('\n') + '\n');
+    }
+    done();
+  });
+}
+
+function adjustSourceMaps(sourceTracker) {
   return through.obj(function(file, encoding, done) {
     var contents  = normalisePaths(file.contents.toString());
-    var sourceMap = JSON.parse(replacer(contents));
+    var sourceMap = JSON.parse(sourceTracker.replace(contents));
     delete sourceMap.sourcesContent;
     var text = JSON.stringify(sourceMap, null, '  ');
     file.contents = new Buffer(text);
@@ -158,9 +178,9 @@ function injectAppJS(htmlBase, jsBase) {
     var target   = path.replace(htmlBase, jsBase) + '/all.' + name + '.js';
     spigot.array({ objectMode: true }, [ file ])
       .pipe(plugins.inject(
-	    gulp.src(target, { read: false })
-		  .pipe(normalisePaths())
-	  ))
+	      gulp.src(target, { read: false })
+		      .pipe(normalisePaths())
+	    ))
       .on('data', function(file) {
         stream.push(file);
       })
@@ -172,16 +192,16 @@ function injectAppJS(htmlBase, jsBase) {
 
 function normalisePaths(text) {
   if (arguments.length > 0) {
-	return text.replace(/\\/g, '/');
+	  return slash(text);
   } else {
     return through.obj(function(file, encoding, done) {
       [ 'path', 'cwd', 'base' ].forEach(function(field) {
-	    if ((field in file) && !!(file[field])) {
-	      file[field] = normalisePaths(file[field]);
-	    }
-	  });
-	  this.push(file);
-	  done();
+        if ((field in file) && !!(file[field])) {
+          file[field] = normalisePaths(file[field]);
+        }
+      });
+	    this.push(file);
+	    done();
     });
   }
 }
@@ -199,7 +219,7 @@ var sourceTracking;
 gulp.task('default', [ 'server' ]);
 
 gulp.task('build', function() {
-  runSequence('js:hint', 'cleanbuild', 'cleantemp', 'js:copylibs', 'js:build', 'html:build');
+  runSequence('js:hint', 'cleanbuild', 'cleantemp', 'js:copylibs', 'js:build', 'cleantemp', 'html:build');
 });
 
 // run js-hint on local sources
@@ -207,9 +227,9 @@ gulp.task('js:hint', function() {
   return combined.create()
     .append(gulp.src(jsLibSrc + '/**/*.js'))
     .append(gulp.src(jsSrc    + '/**/*.js'))
-	.pipe(normalisePaths())
-    .pipe(plugins.jshint('.jshintrc'))
-    .pipe(terseReporter());
+  	.pipe(normalisePaths())
+    .pipe(plugins.jshint())
+    .pipe(jsHintReporter());
 })
 
 // clean the temp directory
@@ -233,11 +253,11 @@ gulp.task('js:copylibs', function() {
   return combined.create()
     .append(gulp.src(jsLibBower + '/**/*.js'))  // bower sources first
     .append(gulp.src(jsLibSrc   + '/**/*.js'))  // local sources overwrite them
-	.pipe(normalisePaths())
+	  .pipe(normalisePaths())
     .pipe(sourceTracking.before())
     .pipe(rebaseTo(jsLibBower, jsLibSrc))
     .pipe(gulp.dest(temp))
-	.pipe(normalisePaths())
+	  .pipe(normalisePaths())
     .pipe(sourceTracking.after());
 });
 
@@ -246,20 +266,19 @@ gulp.task('js:copylibs', function() {
 gulp.task('js:build', function() {
   var selectSourceMaps = plugins.filter('**/*.map');
   return gulp.src(jsSrc + '/**/*.js')
-	.pipe(normalisePaths())
-    .pipe(modularise(temp + '/all.{filename}', function(errorText) {
-      process.stdout.write(sourceTracking.replace(errorText) + '\n');
-    }))
-    .pipe(selectSourceMaps)
-    .pipe(adjustSourceMaps(sourceTracking.replace))
-    .pipe(selectSourceMaps.restore({ end: true }))
-    .pipe(gulp.dest(jsBuild));
+      .pipe(normalisePaths())
+      .pipe(transpileES6(temp + '/all.{filename}'))
+      .pipe(traceurErrorReporter(sourceTracking))
+      .pipe(selectSourceMaps)
+      .pipe(adjustSourceMaps(sourceTracking))
+      .pipe(selectSourceMaps.restore({ end: true }))
+      .pipe(gulp.dest(jsBuild));
 });
 
 // inject dependencies into html and output to build directory
 gulp.task('html:build', function() {
   return gulp.src(htmlSrc + '/**/*.html')
-	.pipe(normalisePaths())
+	  .pipe(normalisePaths())
     .pipe(injectAppJS(htmlSrc, jsBuild))
     .pipe(wiredep.stream())
     .pipe(gulp.dest(htmlBuild));

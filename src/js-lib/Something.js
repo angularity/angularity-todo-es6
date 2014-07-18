@@ -1,7 +1,7 @@
 export class Something {
 
   constructor() {
-    this.greet('Something(src)Constructor')
+    this.greet('Something(src)Constructor');
   }
 
   greet(message) {
