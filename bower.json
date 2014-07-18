@@ -6,5 +6,6 @@
     "traceur-runtime": "latest"
   },
   "devDependencies": {
+    "es6-modular-examplelib": "https://github.com/bholloway/es6-modular-examplelib.git"
   }
 }
