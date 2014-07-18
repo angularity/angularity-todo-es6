@@ -2,7 +2,7 @@
 
 > Proof of concept for es6 modules from source mixed with bower packages
 
-## Usage
+### Usage
 
 ```javascript
 npm install
@@ -15,13 +15,13 @@ This will make available the following applications:
 
 [http://localhost:8000/build/app2.html](http://localhost:8000/build/app2.html)
 
-## Aim
+### Aim
 
 Solve the **module problem** - How to selectively include code that has be authored in a separate project path.
 
 Ideally add some syntactic sugar for **classes** without substantially deviating from javascript syntax.
 
-## Requirements
+### Requirements
 
 A single javascript file exists for each html file, both are local in the `src` directory.
 
@@ -38,7 +38,7 @@ The ES6 `import` syntax must be the same for any source, such that:
 [Source maps](http://blog.teamtreehouse.com/introduction-source-maps) must be generated for all transpiled code
 and map to the correct source.
 
-## How it works
+### How it works
 
 The google originated [Tracur](https://github.com/google/traceur-compiler) compiler provides support for a subset
 of ES6 features. These are sufficient to address the stated aims.
