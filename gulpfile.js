@@ -10,6 +10,11 @@ var connect = require('connect');
 var spigot = require('stream-spigot');
 var fs = require('fs');
 
+function getPathRegExp(source, flags) {
+  var adjusted = source.replace(/([:.\\])/g, '\\$1');
+  return new RegExp(adjusted, flags);
+}
+
 function modularise(outputPattern, errorFunc) {
   var output = [ ];
   return through.obj(function(file, encoding, done) {
@@ -18,9 +23,10 @@ function modularise(outputPattern, errorFunc) {
       stream.push(file);
       done();
     } else {
-      var filename = file.path.split(/[\\\/]/).pop();
+      var filename = file.path.split(/\//).pop();
       var outPath  = outputPattern.replace('{filename}', filename);
-      child.execFile('traceur', [ '--sourcemap', '--out', outPath, file.path ], function(error, stdout, stdin) {
+	  var command  = [ 'traceur', '--source-maps', '--out', outPath, file.path ].join(' ');
+      child.exec(command, { cwd: file.cwd }, function(error, stdout, stdin) {
         if (error) {
           var text     = error.toString();
           var analysis = /[^].*Specified as (.*)\.\nImported by \.{0,2}(.*)\.\n/m.exec(text);
@@ -32,11 +38,12 @@ function modularise(outputPattern, errorFunc) {
           } else {
             message = text.replace(/Error\:\s*Command failed\:\s*/g, '');
           }
-          message = message.replace(new RegExp(file.cwd, 'g'), '');
+          message = normalisePaths(message.replace(getPathRegExp(file.cwd, 'g'), ''));
           output.push(message);
           done();
         } else {
           gulp.src(outPath.replace('js', '*'))
+		    .pipe(normalisePaths())
             .on('data', function(file) {
               stream.push(file);
             }).on('end', function() {
@@ -47,8 +54,7 @@ function modularise(outputPattern, errorFunc) {
     }
   }, function(done) {
     if (output.length) {
-      var text = '\n' + output.join('\n')
-        .replace(/Error\:\s*Command failed\:\s*/g, '');
+      var text = '\n' + output.join('\n').replace(/Error\:\s*Command failed\:\s*/g, '') + '\n';
       errorFunc(text);
     }
     done();
@@ -96,22 +102,22 @@ function trackSources() {
       for (var i = Math.min(before.length, after.length) - 1; i >= 0; i--) {
         var rootRelativeBefore = before[i].path.replace(before[i].cwd, '');
         generalBase.push(after[i].cwd, after[i].path.replace(after[i].relative, ''));
-        text = text.replace(new RegExp(after[i].path, 'g'), rootRelativeBefore);
+        text = text.replace(getPathRegExp(after[i].path, 'g'), rootRelativeBefore);
       }
-      text = text .replace(new RegExp(generalBase.join('|'), 'g'), '');
+      text = text .replace(getPathRegExp(generalBase.join('|'), 'g'), '');
       return text;
     }
   }
 }
 
-function terseReporter(replacer) {
+function terseReporter() {
   var output = '';
   var prevfile;
   return through.obj(function(file, encoding, done) {
     if (file.jshint && !file.jshint.success && !file.jshint.ignored) {
       (function reporter(results, data, opts) {
         results.forEach(function(result) {
-          var filename = result.file.replace(new RegExp(file.cwd, 'g'), '');
+          var filename = result.file.replace(getPathRegExp(file.cwd, 'g'), '');
           var error    = result.error;
           if (prevfile && prevfile !== filename) {
             output += "\n";
@@ -125,7 +131,7 @@ function terseReporter(replacer) {
     done();
   }, function(done) {
     if (output) {
-      console.log('\n' + output);
+      process.stdout.write('\n' + output + '\n');
     }
     done();
   });
@@ -133,7 +139,8 @@ function terseReporter(replacer) {
 
 function adjustSourceMaps(replacer) {
   return through.obj(function(file, encoding, done) {
-    var sourceMap = JSON.parse(replacer(file.contents.toString()));
+    var contents  = normalisePaths(file.contents.toString());
+    var sourceMap = JSON.parse(replacer(contents));
     delete sourceMap.sourcesContent;
     var text = JSON.stringify(sourceMap, null, '  ');
     file.contents = new Buffer(text);
@@ -145,12 +152,15 @@ function adjustSourceMaps(replacer) {
 function injectAppJS(htmlBase, jsBase) {
   return through.obj(function(file, encoding, done) {
     var stream   = this;
-    var analysis = /^(.*)[\\\/](.*)\.html$/.exec(file.path);
+    var analysis = /^(.*)\/(.*)\.html$/.exec(file.path);
     var path     = analysis[1];
     var name     = analysis[2];
     var target   = path.replace(htmlBase, jsBase) + '/all.' + name + '.js';
     spigot.array({ objectMode: true }, [ file ])
-      .pipe(plugins.inject(gulp.src(target, { read: false })))
+      .pipe(plugins.inject(
+	    gulp.src(target, { read: false })
+		  .pipe(normalisePaths())
+	  ))
       .on('data', function(file) {
         stream.push(file);
       })
@@ -158,6 +168,22 @@ function injectAppJS(htmlBase, jsBase) {
         done();
       });
   })
+}
+
+function normalisePaths(text) {
+  if (arguments.length > 0) {
+	return text.replace(/\\/g, '/');
+  } else {
+    return through.obj(function(file, encoding, done) {
+      [ 'path', 'cwd', 'base' ].forEach(function(field) {
+	    if ((field in file) && !!(file[field])) {
+	      file[field] = normalisePaths(file[field]);
+	    }
+	  });
+	  this.push(file);
+	  done();
+    });
+  }
 }
 
 var temp       = '.build'
@@ -170,8 +196,10 @@ var htmlBuild  = 'build'
 
 var sourceTracking;
 
-gulp.task('default', function() {
-  runSequence('js:hint', 'js:cleanbuild', 'html:cleanbuild', 'js:cleantemp', 'js:copylibs', 'js:build', 'js:cleantemp', 'html:build', 'server');
+gulp.task('default', [ 'server' ]);
+
+gulp.task('build', function() {
+  runSequence('js:hint', 'cleanbuild', 'cleantemp', 'js:copylibs', 'js:build', 'html:build');
 });
 
 // run js-hint on local sources
@@ -179,25 +207,22 @@ gulp.task('js:hint', function() {
   return combined.create()
     .append(gulp.src(jsLibSrc + '/**/*.js'))
     .append(gulp.src(jsSrc    + '/**/*.js'))
+	.pipe(normalisePaths())
     .pipe(plugins.jshint('.jshintrc'))
     .pipe(terseReporter());
 })
 
 // clean the temp directory
-gulp.task('js:cleantemp', function() {
+gulp.task('cleantemp', function() {
   return gulp.src(temp)
     .pipe(plugins.clean());
-})
+});
 
 // clean the build directory
-gulp.task('js:cleanbuild', function() {
-  return gulp.src(jsBuild)
-    .pipe(plugins.clean());
-})
-
-// clean the html build directory
-gulp.task('html:cleanbuild', function() {
-  return gulp.src(htmlBuild)
+gulp.task('cleanbuild', function() {
+  return combined.create()
+    .append(gulp.src(jsBuild))
+    .append(gulp.src(htmlBuild))
     .pipe(plugins.clean());
 })
 
@@ -208,9 +233,11 @@ gulp.task('js:copylibs', function() {
   return combined.create()
     .append(gulp.src(jsLibBower + '/**/*.js'))  // bower sources first
     .append(gulp.src(jsLibSrc   + '/**/*.js'))  // local sources overwrite them
+	.pipe(normalisePaths())
     .pipe(sourceTracking.before())
     .pipe(rebaseTo(jsLibBower, jsLibSrc))
     .pipe(gulp.dest(temp))
+	.pipe(normalisePaths())
     .pipe(sourceTracking.after());
 });
 
@@ -219,8 +246,9 @@ gulp.task('js:copylibs', function() {
 gulp.task('js:build', function() {
   var selectSourceMaps = plugins.filter('**/*.map');
   return gulp.src(jsSrc + '/**/*.js')
+	.pipe(normalisePaths())
     .pipe(modularise(temp + '/all.{filename}', function(errorText) {
-      console.log(sourceTracking.replace(errorText));
+      process.stdout.write(sourceTracking.replace(errorText) + '\n');
     }))
     .pipe(selectSourceMaps)
     .pipe(adjustSourceMaps(sourceTracking.replace))
@@ -231,12 +259,13 @@ gulp.task('js:build', function() {
 // inject dependencies into html and output to build directory
 gulp.task('html:build', function() {
   return gulp.src(htmlSrc + '/**/*.html')
+	.pipe(normalisePaths())
     .pipe(injectAppJS(htmlSrc, jsBuild))
     .pipe(wiredep.stream())
     .pipe(gulp.dest(htmlBuild));
 });
 
-gulp.task('server', function(next) {
+gulp.task('server', [ 'build' ], function(next) {
   connect()
     .use('/build', connect.static('build'))
     .use('/bower_components', connect.static('bower_components'))
