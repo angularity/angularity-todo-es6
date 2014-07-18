@@ -16,6 +16,7 @@
   },
   "homepage": "https://github.com/bholloway/es6-modular",
   "dependencies": {
+	"bower": "latest",
     "run-sequence": "latest",
     "format-json": "latest",
     "traceur": "latest",
