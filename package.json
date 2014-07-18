@@ -28,6 +28,7 @@
     "connect": "~2.14.5",
     "wiredep": "latest",
     "slash": "latest",
+    "path": "latest",
     "gulp": "latest",
     "gulp-clean": "latest",
     "gulp-jshint": "latest",

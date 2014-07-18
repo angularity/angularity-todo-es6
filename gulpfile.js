@@ -8,8 +8,8 @@ var runSequence = require('run-sequence');
 var wiredep = require('wiredep');
 var connect = require('connect');
 var spigot = require('stream-spigot');
-var fs = require('fs');
 var slash = require('slash');
+var path = require('path');
 
 function getPathRegExp(source, flags) {
   var adjusted = source.replace(/([:.\\])/g, '\\$1');
@@ -24,15 +24,16 @@ function transpileES6(outputPattern) {
       done();
     } else {
       var filename = file.path.split(/\//).pop();
-      var outPath  = outputPattern.replace('{filename}', filename);
-      var command  = [ 'traceur', '--source-maps', '--out', outPath, file.path ].join(' ');
+      var outFile  = path.resolve(outputPattern.replace('{filename}', filename));
+      var command  = [ 'traceur', '--source-maps', '--out', outFile, file.path ].join(' ');
       child.exec(command, { cwd: file.cwd }, function(error, stdout, stdin) {
         if (error) {
           file.traceurErrors = error.toString();
+          file.traceurOut    = outFile;
           stream.push(file);
           done();
         } else {
-          gulp.src(outPath.replace('js', '*'))
+          gulp.src(outFile.replace('js', '*'))
             .pipe(normalisePaths())
             .on('data', function(file) {
               stream.push(file);
@@ -84,11 +85,8 @@ function trackSources() {
     replace: function(text) {
       var generalBase = [ ];
       for (var i = Math.min(before.length, after.length) - 1; i >= 0; i--) {
-        var rootRelativeBefore = before[i].path.replace(before[i].cwd, '');
-        generalBase.push(after[i].cwd, after[i].path.replace(after[i].relative, ''));
-        text = text.replace(getPathRegExp(after[i].path, 'g'), rootRelativeBefore);
+        text = text.replace(getPathRegExp(after[i].path, 'g'), before[i].path);
       }
-      text = text .replace(getPathRegExp(generalBase.join('|'), 'g'), '');
       return text;
     }
   }
@@ -102,7 +100,7 @@ function jsHintReporter() {
     if (file.jshint && !file.jshint.success && !file.jshint.ignored) {
       (function reporter(results, data, opts) {
         results.forEach(function(result) {
-          var filename = result.file.replace(getPathRegExp(file.cwd, 'g'), '');
+          var filename = result.file;
           var error    = result.error;
           if ((prevfile) && (prevfile !== filename) && (item) && (output.indexOf(item) < 0)) {
             output.push(item);
@@ -131,18 +129,21 @@ function traceurErrorReporter(sourceTracker) {
   return through.obj(function(file, encoding, done) {
     var text = file.traceurErrors;
     if (text) {
-      var REGEXP = /[^].*Specified as (.*)\.\nImported by \.{0,2}(.*)\.\n/m;
+      var REGEXP   = /[^].*Specified as (.*)\.\nImported by \.{0,2}(.*)\.\n/m;
       var analysis = REGEXP.exec(text);
       var message;
       if (analysis) {
         var specified = analysis[1];
-        var filename = analysis[2];
-        message = filename + ': Import not found: ' + specified + '\n';
+        var filename  = analysis[2] + '.js';
+        var isSource  = getPathRegExp(filename + '$').test(file.path);
+        var outPath   = file.traceurOut.split('/').slice(0, -1).join('/');
+        var absolute  = (isSource) ? file.path : (outPath + '/' + filename)
+        message = absolute + ': Import not found: ' + specified + '\n';
       } else {
         message = text.replace(/Error\:\s*Command failed\:\s*/g, '');
       }
       var normalised = normalisePaths(message);
-      var unmapped   = sourceTracker.replace(normalised).replace(file.cwd, '');
+      var unmapped   = sourceTracker.replace(normalised);
       if (output.indexOf(unmapped) < 0) {
         output.push(unmapped);
       }
@@ -159,8 +160,10 @@ function traceurErrorReporter(sourceTracker) {
 
 function adjustSourceMaps(sourceTracker) {
   return through.obj(function(file, encoding, done) {
-    var contents  = normalisePaths(file.contents.toString());
-    var sourceMap = JSON.parse(sourceTracker.replace(contents));
+    var normalised   = normalisePaths(file.contents.toString());
+    var unMapped     = sourceTracker.replace(normalised);
+    var rootRelative = unMapped.replace(getPathRegExp(file.cwd, 'g'), '');
+    var sourceMap    = JSON.parse(rootRelative);
     delete sourceMap.sourcesContent;
     var text = JSON.stringify(sourceMap, null, '  ');
     file.contents = new Buffer(text);
