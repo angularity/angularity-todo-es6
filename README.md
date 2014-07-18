@@ -11,9 +11,9 @@ gulp
 
 This will make available the following applications:
 
-https://localhost:8000/build/app1.html
+[**http://localhost:8000/build/app1.html**](http://localhost:8000/build/app1.html)
 
-https://localhost:8000/build/app2.html
+[**http://localhost:8000/build/app2.html**](http://localhost:8000/build/app2.html)
 
 ## Aim
 
