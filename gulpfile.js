@@ -18,10 +18,12 @@ function transpileES6(outputPath) {
       stream.push(file);
       done();
     } else {
-      var cwd      = file.cwd;
-      var base     = path.resolve(outputPath);
-      var outFile  = base + '/' + path.basename(file.path);
-      var outPath  = base + '/' + file.relative.split('/').slice(0, -1).join('/');
+      var cwd      = plugins.slash(file.cwd);
+      var relative = plugins.slash(file.relative);
+      var base     = plugins.slash(path.resolve(outputPath));
+      var filename = plugins.slash(path.basename(file.path));
+      var outFile  = base + '/' + filename;
+      var outPath  = base + '/' + relative.replace(filename, '');
       var command  = [ 'traceur', '--source-maps', '--out', outFile, file.path ].join(' ');
       child.exec(command, { cwd: cwd }, function(error, stdout, stdin) {
         if (error) {
