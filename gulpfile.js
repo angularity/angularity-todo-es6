@@ -153,7 +153,7 @@ function adjustSourceMaps(sourceTracker) {
       var normalised   = plugins.slash(candidate);
       var unmapped     = sourceTracker.replace(normalised);
       var rootRelative = '/' + path.relative(file.cwd, unmapped);
-      return rootRelative;
+      return plugins.slash(rootRelative);
     }
     var sourceMap = JSON.parse(file.contents.toString());
     delete sourceMap.sourcesContent;
