@@ -201,9 +201,16 @@ var sourceTracking;
 
 function jsSrcLibStream() {
   return combined.create()
-    .append(gulp.src(jsLibBower + '/**/*.js').pipe(plugins.semiflat(jsLibBower)))   // bower sources first
-    .append(gulp.src(jsLibSrc   + '/**/*.js').pipe(plugins.semiflat(jsLibSrc)))     // local sources overwrite them
-    .pipe(plugins.slash());
+    .append(    // bower sources first
+      gulp.src(jsLibBower + '/**/*.js')
+        .pipe(plugins.slash())
+        .pipe(plugins.semiflat(jsLibBower))
+    )
+    .append(    // local sources overwrite them
+      gulp.src(jsLibSrc + '/**/*.js')
+        .pipe(plugins.slash())
+        .pipe(plugins.semiflat(jsLibSrc))
+    );
 }
 
 gulp.task('default', [ 'server' ]);
