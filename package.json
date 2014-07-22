@@ -27,6 +27,7 @@
     "wiredep": "latest",
     "slash": "latest",
     "browser-sync": "latest",
+    "minimatch": "latest",
     "gulp": "latest",
     "gulp-clean": "latest",
     "gulp-jshint": "latest",
