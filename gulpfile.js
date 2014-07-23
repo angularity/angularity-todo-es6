@@ -11,20 +11,28 @@ var browserSync = require('browser-sync');
 var minimatch = require('minimatch');
 var Readable = require('stream').Readable;
 
-function streamSegment(method, inputs) {
+function streamSegment(method) {
   var readable = new Readable({ objectMode: true });
   var stream   = through.obj(function(file, encoding, done) {
     readable.push(file);
     done();
   });
-  readable._read = function() {};
-  (method && method(readable) || readable)
+  readable._read = new Function();
+  method(readable)
     .on('data', function(file) {
       stream.push(file);
     })
     .on('end', function() {
       stream.push(null);
     });
+  stream.use = function() {
+    readable.push.apply(readable, Array.prototype.slice.call(arguments));
+    return stream;
+  }
+  stream.end = function() {
+    readable.push(null);
+    return stream;
+  }
   return stream;
 }
 
@@ -226,7 +234,8 @@ function injectAppJS(htmlBase, jsBase) {
       stream.push(file);
       done();
     })
-    .unshift(file, null);
+    .use(file)
+    .end();
   })
 }
 
