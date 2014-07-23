@@ -7,7 +7,7 @@ export class Something {
   greet(message) {
     message = 'Something(lib) says : ' + message;
     $('body').append($('<div>').html(message));
-    window.console.log(message);
+    console.log(message);
   }
 
 }
