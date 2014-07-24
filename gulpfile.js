@@ -152,11 +152,10 @@
     // reload
     plugins.watch({
       glob: HTML_BUILD + '/**/*.html'
-    })
-      .pipe(plugins.plumber())
-      .on('ready', function() {
-        browserSync.reload();
-      });
+    }, function() {
+      browserSync.reload();
+      console.log(hr('-', 120));
+    });
   });
 
 }());
