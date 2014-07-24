@@ -1,9 +1,10 @@
 {
   "name": "es6-modular",
+  "version": "0.0.1",
   "description": "Proof of concept for es6 modules from source mixed with bower packages",
+  "private": true,
   "scripts": {
-    "postinstall": "bower install",
-    "test": "gulp test"
+    "postinstall": "bower install"
   },
   "repository": {
     "type": "git",
@@ -16,22 +17,16 @@
   },
   "homepage": "https://github.com/bholloway/es6-modular",
   "dependencies": {
-	"bower": "latest",
-    "through2": "latest",
+	  "bower": "latest",
     "combined-stream": "latest",
     "run-sequence": "latest",
     "wiredep": "latest",
     "browser-sync": "latest",
-    "minimatch": "latest",
-    "traceur": "latest",
     "gulp": "latest",
     "gulp-load-plugins": "latest",
     "gulp-rimraf": "latest",
     "gulp-jshint": "latest",
-    "gulp-filter": "latest",
-    "gulp-inject": "latest",
-    "gulp-slash": "latest",
-    "gulp-util": "latest",
-    "gulp-semiflat": "latest"
+    "gulp-semiflat": "latest",
+    "gulp-traceur-out": "latest"
   }
 }
