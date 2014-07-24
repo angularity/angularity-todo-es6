@@ -59,8 +59,8 @@ gulp.task('js:build', function() {
 
 // inject dependencies into html and output to build directory
 gulp.task('html:build', function() {
-  return gulp.src(HTML_SRC + '/**/*.html')
-    .pipe(traceur.injectAppJS(HTML_SRC, JS_BUILD))
+  return gulp.src(HTML_SRC + '/**/*.html').pipe(plugins.semiflat(HTML_SRC))
+    .pipe(traceur.injectAppJS(JS_BUILD))
     .pipe(wiredep.stream())
     .pipe(gulp.dest(HTML_BUILD));
 });
