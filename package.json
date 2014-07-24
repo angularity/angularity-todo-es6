@@ -1,6 +1,6 @@
 {
   "name": "es6-modular",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Proof of concept for es6 modules from source mixed with bower packages",
   "private": true,
   "scripts": {
@@ -26,7 +26,10 @@
     "gulp-load-plugins": "latest",
     "gulp-rimraf": "latest",
     "gulp-jshint": "latest",
+    "gulp-watch": "latest",
+    "gulp-filter": "latest",
+    "gulp-plumber": "latest",
     "gulp-semiflat": "latest",
-    "gulp-traceur-out": "latest"
+    "gulp-traceur-out": "git://github.com/bholloway/gulp-traceur-out.git"
   }
 }

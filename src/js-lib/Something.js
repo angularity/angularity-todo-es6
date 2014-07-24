@@ -1,3 +1,5 @@
+/* global $:false */
+/* global console:false */
 export class Something {
 
   constructor() {

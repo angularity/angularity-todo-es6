@@ -1,83 +1,162 @@
-var gulp = require('gulp');
-var plugins = require('gulp-load-plugins')();
+/* global require:false */
+/* global console:false */
+(function() {
+  'use strict';
 
-var combined = require("combined-stream");
-var runSequence = require('run-sequence');
-var wiredep = require('wiredep');
-var browserSync = require('browser-sync');
+  var gulp        = require('gulp');
+  var plugins     = require('gulp-load-plugins')();
+  var combined    = require('combined-stream');
+  var runSequence = require('run-sequence');
+  var wiredep     = require('wiredep');
+  var browserSync = require('browser-sync');
 
-const TEMP         = '.build';
-const JS_LIB_BOWER = 'bower_components/**/js-lib';
-const JS_LIB_LOCAL = 'src/js-lib';
-const JS_SRC       = 'src/js';
-const JS_BUILD     = 'build/js';
-const HTML_SRC     = 'src/html';
-const HTML_BUILD   = 'build/html';
+  function hr(char, length) {
+    var text = char;
+    while (text.length < length) {
+      text += char;
+    }
+    return text;
+  }
 
-var traceur;
+  var TEMP         = '.build';
+  var JS_LIB_BOWER = 'bower_components/**/js-lib';
+  var JS_LIB_LOCAL = 'src/js-lib';
+  var JS_SRC       = 'src/js';
+  var JS_BUILD     = 'build/js';
+  var HTML_SRC     = 'src/html';
+  var HTML_BUILD   = 'build/html';
 
-gulp.task('default', [ 'server' ]);
+  var traceur;
 
-gulp.task('build', function() {
-  traceur = plugins.traceurOut(TEMP);
-  runSequence('cleanbuild', 'cleantemp', 'js:init', 'js:build', 'cleantemp', 'html:build');
-});
+  function jsLibStream() {
+    return combined.create()
+      .append(gulp.src(JS_LIB_BOWER + '/**/*.js').pipe(plugins.semiflat(JS_LIB_BOWER)))  // bower lib first
+      .append(gulp.src(JS_LIB_LOCAL + '/**/*.js').pipe(plugins.semiflat(JS_LIB_LOCAL))); // local lib may overwrite
+  }
 
-// clean the temp directory
-gulp.task('cleantemp', function() {
-  return gulp.src(TEMP, { read: false })
-    .pipe(plugins.rimraf());
-});
+  function jsSrcStream() {
+    return combined.create()
+      .append(gulp.src(JS_SRC + '/**/*.js').pipe(plugins.semiflat(JS_SRC)));  // application js
+  }
 
-// clean the build directory
-gulp.task('cleanbuild', function() {
-  return combined.create()
-    .append(gulp.src(JS_BUILD,   { read: false }))
-    .append(gulp.src(HTML_BUILD, { read: false }))
-    .pipe(plugins.rimraf());
-})
+  gulp.task('default', [ 'watch' ]);
 
-// run js-hint on sources and init traceur
-gulp.task('js:init', function() {
-  return combined.create()
-    .append(gulp.src(JS_LIB_BOWER + '/**/*.js').pipe(plugins.semiflat(JS_LIB_BOWER))) // bower sources first
-    .append(gulp.src(JS_LIB_LOCAL + '/**/*.js').pipe(plugins.semiflat(JS_LIB_LOCAL))) // local sources may overwrite
-    .pipe(plugins.jshint())
-    .pipe(traceur.jsHintReporter())
-    .pipe(traceur.sources())
-});
-
-// resolve all imports for the source files to give a single optimised js file
-//  in the build directory with source map for each
-gulp.task('js:build', function() {
-  return gulp.src(JS_SRC + '/**/*.js', { read: false })
-    .pipe(traceur.transpile())
-    .pipe(traceur.traceurReporter())
-    .pipe(traceur.adjustSourceMaps())
-    .pipe(gulp.dest(JS_BUILD));
-});
-
-// inject dependencies into html and output to build directory
-gulp.task('html:build', function() {
-  return gulp.src(HTML_SRC + '/**/*.html').pipe(plugins.semiflat(HTML_SRC))
-    .pipe(traceur.injectAppJS(JS_BUILD))
-    .pipe(wiredep.stream())
-    .pipe(gulp.dest(HTML_BUILD));
-});
-
-// use browsersync for serving the application, its dependencies and is sources
-gulp.task('server', [ 'build' ], function(next) {
-  browserSync({
-    server: {
-      baseDir: 'build/html',
-      routes: {
-        '/build': 'build',
-        '/src': 'src',
-        '/bower_components': 'bower_components'
-      }
-    },
-    port: 8000,
-    logLevel: 'silent',
-    open: false
+  gulp.task('focus:start', function() {
+    console.log(hr('\u25BC', 120));
   });
-});
+
+  gulp.task('focus:stop', function() {
+    console.log(hr('\u25B2', 120));
+  });
+
+  gulp.task('build', function(done) {
+    runSequence('js', 'html', done);
+  });
+
+  gulp.task('js', function(done) {
+    traceur = plugins.traceurOut(TEMP);
+    runSequence(
+      [ 'js:clean', 'tmp:clean' ],
+      'focus:start',
+      'js:init',
+      'js:build',
+      'focus:stop',
+      'tmp:clean',
+      done
+    );
+  });
+
+  // clean the temp directory
+  gulp.task('tmp:clean', function() {
+    return gulp.src(TEMP, { read: false })
+      .pipe(plugins.rimraf());
+  });
+
+  // clean the js build directory
+  gulp.task('js:clean', function() {
+    return gulp.src(JS_BUILD + '/**/*.js', { read: false })
+      .pipe(plugins.rimraf());
+  });
+
+  // init traceur libs and run linter
+  gulp.task('js:init', function() {
+    return combined.create()
+      .append(jsLibStream().pipe(traceur.sources()))
+      .append(jsSrcStream())
+      .pipe(plugins.jshint())
+      .pipe(traceur.jsHintReporter());
+  });
+
+  // resolve all imports for the source files to give a single optimised js file
+  //  in the build directory with source map for each
+  gulp.task('js:build', function() {
+    return gulp.src(JS_SRC + '/**/*.js', { read: false })
+      .pipe(traceur.transpile())
+      .pipe(traceur.traceurReporter())
+      .pipe(traceur.adjustSourceMaps())
+      .pipe(gulp.dest(JS_BUILD));
+  });
+
+  gulp.task('html', function(done) {
+    runSequence(
+      'html:clean',
+      'html:build',
+      done
+    );
+  });
+
+  // clean the html build directory
+  gulp.task('html:clean', function() {
+    return gulp.src(HTML_BUILD + '/**/*.html', { read: false })
+      .pipe(plugins.rimraf());
+  });
+
+  // inject dependencies into html and output to build directory
+  gulp.task('html:build', function() {
+    return gulp.src(HTML_SRC + '/**/*.html').pipe(plugins.semiflat(HTML_SRC))
+      .pipe(traceur.injectAppJS(JS_BUILD))
+      .pipe(wiredep.stream())
+      .pipe(gulp.dest(HTML_BUILD));
+  });
+
+  // use browsersync for serving the application, its dependencies and is sources
+  gulp.task('server', function() {
+    browserSync({
+      server: {
+        baseDir: 'build/html',
+        routes: {
+          '/build': 'build',
+          '/src': 'src',
+          '/bower_components': 'bower_components'
+        }
+      },
+      port: 8000,
+      logLevel: 'silent',
+      open: false
+    });
+  });
+
+  // basic watch implementation
+  gulp.task('watch', [ 'server' ], function() {
+
+    // rebuild
+    plugins.watch({
+      glob: [
+        JS_LIB_BOWER + '/**/*.js',
+        JS_LIB_LOCAL + '/**/*.js',
+        JS_SRC       + '/**/*.js',
+        HTML_SRC     + '/**/*.html'
+      ]
+    }, [ 'build' ]);
+
+    // reload
+    plugins.watch({
+      glob: HTML_BUILD + '/**/*.html'
+    })
+      .pipe(plugins.plumber())
+      .on('ready', function() {
+        browserSync.reload();
+      });
+  });
+
+}());
