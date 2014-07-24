@@ -15,7 +15,7 @@ This will make available the following applications:
 
 [http://localhost:8000/app2.html](http://localhost:8000/app2.html)
 
-As well as `app1` repeated in a subdirectory.
+As well as app1 repeated in a subdirectory to give app3.
 
 [http://localhost:8000/sub/app3.html](http://localhost:8000/sub/app3.html)
 
@@ -47,7 +47,7 @@ and map to the correct source.
 
 This solution is inflenced by [Guy Bedford's article](http://guybedford.com/practical-workflows-for-es6-modules).
 
-This solution arguably duplicates the functionality of [Browserify](http://browserify.org/). Please consider which implementation best suits your needs.
+It arguably duplicates the functionality of [Browserify](http://browserify.org/). Please consider which implementation best suits your needs.
 
 ### How it works
 
