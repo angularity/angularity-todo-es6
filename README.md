@@ -47,7 +47,7 @@ and map to the correct source.
 
 This solution is inflenced by [Guy Bedford's article](http://guybedford.com/practical-workflows-for-es6-modules).
 
-There is arguably some duplication with [Browserify](http://browserify.org/). Please consider which implementation best suits your needs.
+This solution arguably duplicates the functionality of [Browserify](http://browserify.org/). Please consider which implementation best suits your needs.
 
 ### How it works
 
