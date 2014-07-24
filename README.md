@@ -17,7 +17,7 @@ This will make available the following applications:
 
 As well as `app1` repeated in a subdirectory.
 
-[http://localhost:8000/app2.html](http://localhost:8000/sub/app3.html)
+[http://localhost:8000/sub/app3.html](http://localhost:8000/sub/app3.html)
 
 ### Aim
 
