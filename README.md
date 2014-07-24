@@ -11,9 +11,13 @@ gulp
 
 This will make available the following applications:
 
-[http://localhost:8000/build/app1.html](http://localhost:8000/build/app1.html)
+[http://localhost:8000/app1.html](http://localhost:8000/app1.html)
 
-[http://localhost:8000/build/app2.html](http://localhost:8000/build/app2.html)
+[http://localhost:8000/app2.html](http://localhost:8000/app2.html)
+
+As well as `app1` repeated in a subdirectory.
+
+[http://localhost:8000/app2.html](http://localhost:8000/sub/app3.html)
 
 ### Aim
 
@@ -23,12 +27,13 @@ Ideally add some syntactic sugar for **classes** without substantially deviating
 
 ### Requirements
 
-A single javascript file exists for each html file, both are local in the `src` directory.
+A single javascript file exists for each html file, locally in the `src` directory. They are identified by the `js` path.
 
-The application javascript includes library code by [Ecmascript6(ES6)](http://wiki.ecmascript.org/doku.php?id=harmony:modules)
-import. It likely provides IOC mappings, such as `angular.module().service()`.
+These application javascript files include library code by [Ecmascript6(ES6)](http://wiki.ecmascript.org/doku.php?id=harmony:modules) import. Such library code is available
+in `bower` packages and locally in the `src` directory. They are identified by the `js-lib` path.
 
-Additional library code is available in `bower` packages and locally in the `src` directory.
+The application files typically provide configuration and IOC mappings, such as `angular.module().service()`.
+The library files typically implement classes to be used in such IOC mappings.
 
 The ES6 `import` syntax must be the same for any source, such that:
 
@@ -37,6 +42,12 @@ The ES6 `import` syntax must be the same for any source, such that:
 
 [Source maps](http://blog.teamtreehouse.com/introduction-source-maps) must be generated for all transpiled code
 and map to the correct source.
+
+### Comparisons
+
+This solution is inflenced by [Guy Bedford's article](http://guybedford.com/practical-workflows-for-es6-modules).
+
+There is arguably some duplication with [Browserify](http://browserify.org/). Please consider which implementation best suits your needs.
 
 ### How it works
 
