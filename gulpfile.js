@@ -49,14 +49,14 @@
   
   function routes() {
   	var result = { };
-	[ JS_LIB_LOCAL, BOWER, JS_BUILD ].forEach(function(path) {
-	  var key = '/' + path;
-	  if (!(key in routes)) {
-		result[key] = path;
-	  }
-	});
-	console.log(result);
-	return result;
+  	[ JS_LIB_LOCAL, BOWER, JS_BUILD ].forEach(function(path) {
+	    var key = '/' + path;
+  	  if (!(key in routes)) {
+    		result[key] = path;
+  	  }
+  	});
+  	console.log(result);
+	  return result;
   }
 
   gulp.task('default', [ 'watch' ]);
