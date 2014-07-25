@@ -1,5 +1,6 @@
 /* global require:false */
 /* global console:false */
+/* global setTimeout:false */
 (function() {
   'use strict';
 
@@ -9,14 +10,7 @@
   var runSequence = require('run-sequence');
   var wiredep     = require('wiredep');
   var browserSync = require('browser-sync');
-
-  function hr(char, length, title) {
-    var text = (title) ? (' ' + title.split('').join(' ').toUpperCase() + ' ') : '';
-    while (text.length < length) {
-      text = (char + text + char).slice(0, length);
-    }
-    return text;
-  }
+  var path        = require('path');
 
   var TEMP          = '.build';
   var BOWER         = 'bower_components';
@@ -46,42 +40,49 @@
     return combined.create()
       .append(gulp.src(JS_SRC + '/**/*.js').pipe(plugins.semiflat(JS_SRC)));  // application js
   }
-  
+
+  function cssLibStream() {
+    return combined.create()
+      .append(gulp.src(CSS_LIB_BOWER + '/**/*.scss').pipe(plugins.semiflat(CSS_LIB_BOWER)))  // bower lib first
+      .append(gulp.src(CSS_LIB_LOCAL + '/**/*.scss').pipe(plugins.semiflat(CSS_LIB_LOCAL))); // local lib may overwrite
+  }
+
+  function cssSrcStream() {
+    return combined.create()
+      .append(gulp.src(CSS_SRC + '/**/*.scss').pipe(plugins.semiflat(CSS_SRC)));  // application css
+  }
+
   function routes() {
   	var result = { };
-  	[ JS_LIB_LOCAL, BOWER, JS_BUILD ].forEach(function(path) {
-	    var key = '/' + path;
-  	  if (!(key in routes)) {
-    		result[key] = path;
-  	  }
+  	[ JS_LIB_LOCAL, CSS_LIB_LOCAL, BOWER, JS_BUILD, CSS_BUILD ].forEach(function(path) {
+   		result['/' + path] = path;
   	});
-  	console.log(result);
 	  return result;
   }
 
+  function hr(char, length, title) {
+    var text = (title) ? (' ' + title.split('').join(' ').toUpperCase() + ' ') : '';
+    while (text.length < length) {
+      text = (char + text + char).slice(0, length);
+    }
+    return text;
+  }
+
+  // DEFAULT ---------------------------------
   gulp.task('default', [ 'watch' ]);
 
-  gulp.task('focus:start', function() {
-    console.log(hr('\u25BC', 120));
-  });
-
-  gulp.task('focus:stop', function() {
-    console.log(hr('\u25B2', 120));
-  });
-
   gulp.task('build', function(done) {
-    runSequence('js', 'html', done);
+    runSequence('js', 'css', 'html', done);
   });
 
+  // JS ---------------------------------
   gulp.task('js', function(done) {
-    console.log(hr('-', 120, 'javascript'));
-    traceur = plugins.traceurOut(TEMP);
+    console.log(hr('-', 80, 'javascript'));
+    traceur = plugins.traceurOut(TEMP, 80);
     runSequence(
       [ 'js:clean', 'tmp:clean' ],
-      'focus:start',
       'js:init',
       'js:build',
-      'focus:stop',
       'tmp:clean',
       done
     );
@@ -118,8 +119,9 @@
       .pipe(gulp.dest(JS_BUILD));
   });
 
+  // HTML ---------------------------------
   gulp.task('html', function(done) {
-    console.log(hr('-', 120, 'html'));
+    console.log(hr('-', 80, 'html'));
     runSequence(
       'html:clean',
       'html:build',
@@ -142,6 +144,111 @@
       .pipe(gulp.dest(HTML_BUILD));
   });
 
+  // CSS ---------------------------------
+  gulp.task('css', function(done) {
+    console.log(hr('-', 80, 'css'));
+    runSequence(
+      'css:clean',
+      'css:init',
+      'css:build',
+      done
+    );
+  });
+
+  var cssLibs;
+
+  // clean the css build directory
+  gulp.task('css:clean', function() {
+    return gulp.src(CSS_BUILD + '/**/*.css', { read: false })
+      .pipe(plugins.rimraf());
+  });
+
+  // discover css libs
+  gulp.task('css:init', function() {
+    cssLibs = [ ];
+    return cssLibStream()
+      .on('data', function(file) {
+        if (cssLibs.indexOf(file.base) < 0) {
+          cssLibs.push(file.base);
+        }
+      });
+  });
+
+  // compile sass with the previously discovered lib paths
+  gulp.task('css:build', function () {
+    var current;
+    function sassReporter(error) {
+      var analysis = (/(.*)\:(\d+)\:\s*error:\s*(.*)/).exec(error);
+      if (analysis) {
+        var filename = (analysis[1] === 'source string') ? current.path : path.resolve(analysis[1] + '.scss');
+        var message  = filename + ':' + analysis[2] + ':0: ' + analysis[3];
+        console.log('\n' + message + '\n');
+      } else {
+        console.log('\n!!! TODO parse this error: ' + error + '\n');
+      }
+    }
+    return gulp.src(CSS_SRC + '/**/*.scss').pipe(plugins.semiflat(CSS_SRC))
+      .on('data', function(file) {
+        current = file;
+      })
+      .pipe(plugins.plumber())
+      .pipe(plugins.sass({
+        includePaths: cssLibs,
+//        sourceComments: 'map',
+        onError: sassReporter
+      }))
+      .pipe(gulp.dest(CSS_BUILD));
+  });
+
+  // WATCH ---------------------------------
+  // basic watch implementation
+  gulp.task('watch', [ 'server' ], function() {
+
+    // rebuild
+    plugins.watch({
+      name: 'JAVASCRIPT',
+      emitOnGlob: false,
+      glob: [
+        JS_LIB_BOWER + '/**/*.js',
+        JS_LIB_LOCAL + '/**/*.js',
+        JS_SRC       + '/**/*.js'
+      ]
+    }, [ 'js' ]);
+    plugins.watch({
+      name: 'CSS',
+      emitOnGlob: false,
+      glob: [
+        CSS_LIB_BOWER + '/**/*.scss',
+        CSS_LIB_LOCAL + '/**/*.scss',
+        CSS_SRC       + '/**/*.scss'
+      ]
+    }, [ 'css' ]);
+
+    // rewire dependencies
+    plugins.watch({
+      name: 'HTML',
+      emitOnGlob: false,
+      glob: [
+        HTML_SRC  + '/**/*.html',
+        BOWER     + '/*',
+        JS_BUILD  + '/**/*.js',
+        CSS_BUILD + '/**/*.css'
+      ]
+    }, [ 'html' ]);
+
+    // reload
+    plugins.watch({
+      name: 'RELOAD',
+      emitOnGlob: true,
+      glob: [
+          HTML_BUILD + '/**/*.html'
+      ]
+    }, function() {
+      browserSync.reload();
+      console.log(hr('-', 80, 'reload'));
+    });
+  });
+
   // use browsersync for serving the application, its dependencies and is sources
   gulp.task('server', [ 'build' ], function() {
     browserSync({
@@ -152,37 +259,6 @@
       port: 8000,
       logLevel: 'silent',
       open: false
-    });
-  });
-
-  // basic watch implementation
-  gulp.task('watch', [ 'server' ], function() {
-
-    // rebuild
-    plugins.watch({
-      emitOnGlob: false,
-      glob: [
-        JS_LIB_BOWER + '/**/*.js',
-        JS_LIB_LOCAL + '/**/*.js',
-        JS_SRC       + '/**/*.js',
-        HTML_SRC     + '/**/*.html'
-      ]
-    }, [ 'build' ]);
-
-    // rewire dependencies
-    plugins.watch({
-      emitOnGlob: false,
-      glob: [
-        BOWER + '/**/*'
-      ]
-    }, [ 'html' ]);
-
-    // reload
-    plugins.watch({
-      glob: HTML_BUILD + '/**/*.html'
-    }, function() {
-      browserSync.reload();
-      console.log(hr('-', 120, 'reload'));
     });
   });
 

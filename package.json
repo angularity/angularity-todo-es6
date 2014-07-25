@@ -26,6 +26,7 @@
     "gulp-load-plugins": "latest",
     "gulp-rimraf": "latest",
     "gulp-jshint": "latest",
+    "gulp-sass": "latest",
     "gulp-watch": "latest",
     "gulp-filter": "latest",
     "gulp-plumber": "latest",
