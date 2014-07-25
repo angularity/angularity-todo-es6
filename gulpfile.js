@@ -46,6 +46,18 @@
     return combined.create()
       .append(gulp.src(JS_SRC + '/**/*.js').pipe(plugins.semiflat(JS_SRC)));  // application js
   }
+  
+  function routes() {
+  	var result = { };
+	[ JS_LIB_LOCAL, BOWER, JS_BUILD ].forEach(function(path) {
+	  var key = '/' + path;
+	  if (!(key in routes)) {
+		result[key] = path;
+	  }
+	});
+	console.log(result);
+	return result;
+  }
 
   gulp.task('default', [ 'watch' ]);
 
@@ -134,12 +146,8 @@
   gulp.task('server', [ 'build' ], function() {
     browserSync({
       server: {
-        baseDir: 'build/html',
-        routes: {
-          '/build': 'build',
-          '/src': 'src',
-          '/bower_components': 'bower_components'
-        }
+        baseDir: HTML_BUILD,
+        routes: routes()
       },
       port: 8000,
       logLevel: 'silent',
