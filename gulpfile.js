@@ -10,21 +10,22 @@
   var wiredep     = require('wiredep');
   var browserSync = require('browser-sync');
 
-  function hr(char, length) {
-    var text = char;
+  function hr(char, length, title) {
+    var text = (title) ? (' ' + title.split('').join(' ').toUpperCase() + ' ') : '';
     while (text.length < length) {
-      text += char;
+      text = (char + text + char).slice(0, length);
     }
     return text;
   }
 
   var TEMP         = '.build';
+  var BOWER        = 'bower_components';
   var JS_LIB_BOWER = 'bower_components/**/js-lib';
   var JS_LIB_LOCAL = 'src/js-lib';
-  var JS_SRC       = 'src/js';
-  var JS_BUILD     = 'build/js';
-  var HTML_SRC     = 'src/html';
-  var HTML_BUILD   = 'build/html';
+  var JS_SRC       = 'src/';
+  var JS_BUILD     = 'build/';
+  var HTML_SRC     = 'src/';
+  var HTML_BUILD   = 'build/';
 
   var traceur;
 
@@ -54,6 +55,7 @@
   });
 
   gulp.task('js', function(done) {
+    console.log(hr('-', 120, 'javascript'));
     traceur = plugins.traceurOut(TEMP);
     runSequence(
       [ 'js:clean', 'tmp:clean' ],
@@ -98,6 +100,7 @@
   });
 
   gulp.task('html', function(done) {
+    console.log(hr('-', 120, 'html'));
     runSequence(
       'html:clean',
       'html:build',
@@ -114,13 +117,14 @@
   // inject dependencies into html and output to build directory
   gulp.task('html:build', function() {
     return gulp.src(HTML_SRC + '/**/*.html').pipe(plugins.semiflat(HTML_SRC))
+      .pipe(plugins.plumber())
       .pipe(traceur.injectAppJS(JS_BUILD))
       .pipe(wiredep.stream())
       .pipe(gulp.dest(HTML_BUILD));
   });
 
   // use browsersync for serving the application, its dependencies and is sources
-  gulp.task('server', function() {
+  gulp.task('server', [ 'build' ], function() {
     browserSync({
       server: {
         baseDir: 'build/html',
@@ -141,6 +145,7 @@
 
     // rebuild
     plugins.watch({
+      emitOnGlob: false,
       glob: [
         JS_LIB_BOWER + '/**/*.js',
         JS_LIB_LOCAL + '/**/*.js',
@@ -149,12 +154,20 @@
       ]
     }, [ 'build' ]);
 
+    // rewire dependencies
+    plugins.watch({
+      emitOnGlob: false,
+      glob: [
+        BOWER + '/**/*'
+      ]
+    }, [ 'html' ]);
+
     // reload
     plugins.watch({
       glob: HTML_BUILD + '/**/*.html'
     }, function() {
       browserSync.reload();
-      console.log(hr('-', 120));
+      console.log(hr('-', 120, 'reload'));
     });
   });
 
