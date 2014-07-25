@@ -18,14 +18,21 @@
     return text;
   }
 
-  var TEMP         = '.build';
-  var BOWER        = 'bower_components';
-  var JS_LIB_BOWER = 'bower_components/**/js-lib';
-  var JS_LIB_LOCAL = 'src/js-lib';
-  var JS_SRC       = 'src/';
-  var JS_BUILD     = 'build/';
-  var HTML_SRC     = 'src/';
-  var HTML_BUILD   = 'build/';
+  var TEMP          = '.build';
+  var BOWER         = 'bower_components';
+
+  var JS_LIB_BOWER  = 'bower_components/**/js-lib';
+  var JS_LIB_LOCAL  = 'src/js-lib';
+  var JS_SRC        = 'src/target';
+  var JS_BUILD      = 'build';
+
+  var CSS_LIB_BOWER = 'bower_components/**/css-lib';
+  var CSS_LIB_LOCAL = 'src/css-lib';
+  var CSS_SRC       = 'src/target';
+  var CSS_BUILD     = 'build';
+
+  var HTML_SRC      = 'src/target';
+  var HTML_BUILD    = 'build';
 
   var traceur;
 
@@ -118,7 +125,7 @@
   gulp.task('html:build', function() {
     return gulp.src(HTML_SRC + '/**/*.html').pipe(plugins.semiflat(HTML_SRC))
       .pipe(plugins.plumber())
-      .pipe(traceur.injectAppJS(JS_BUILD))
+      .pipe(traceur.injectAppJSCSS(JS_BUILD, CSS_BUILD))
       .pipe(wiredep.stream())
       .pipe(gulp.dest(HTML_BUILD));
   });
