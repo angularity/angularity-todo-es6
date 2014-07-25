@@ -1,6 +1,6 @@
 {
   "name": "es6-modular",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Proof of concept for es6 modules from source mixed with bower packages",
   "private": true,
   "scripts": {
@@ -30,6 +30,6 @@
     "gulp-filter": "latest",
     "gulp-plumber": "latest",
     "gulp-semiflat": "latest",
-    "gulp-traceur-out": "git://github.com/bholloway/gulp-traceur-out.git"
+    "gulp-traceur-out": "latest"
   }
 }

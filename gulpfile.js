@@ -81,8 +81,8 @@
   // init traceur libs and run linter
   gulp.task('js:init', function() {
     return combined.create()
-      .append(jsLibStream().pipe(traceur.sources()))
-      .append(jsSrcStream())
+      .append(jsLibStream().pipe(traceur.libraries()))
+      .append(jsSrcStream().pipe(traceur.sources()))
       .pipe(plugins.jshint())
       .pipe(traceur.jsHintReporter());
   });
