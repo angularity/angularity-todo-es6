@@ -1,6 +1,5 @@
 /* global require:false */
 /* global console:false */
-/* global setTimeout:false */
 (function() {
   'use strict';
 
@@ -72,7 +71,27 @@
   gulp.task('default', [ 'watch' ]);
 
   gulp.task('build', function(done) {
+    console.log(hr('-', 80, 'build'));
     runSequence('js', 'css', 'html', done);
+  });
+
+  // SERVER ---------------------------------
+  gulp.task('server', [ 'build' ], function() {
+    console.log(hr('-', 80, 'server'));
+    browserSync({
+      server: {
+        baseDir: HTML_BUILD,
+        routes: routes()
+      },
+      port: 8000,
+      logLevel: 'silent',
+      open: false
+    });
+  });
+
+  gulp.task('reload', function() {
+    console.log(hr('-', 80, 'reload'));
+    browserSync.reload();
   });
 
   // JS ---------------------------------
@@ -119,31 +138,6 @@
       .pipe(gulp.dest(JS_BUILD));
   });
 
-  // HTML ---------------------------------
-  gulp.task('html', function(done) {
-    console.log(hr('-', 80, 'html'));
-    runSequence(
-      'html:clean',
-      'html:build',
-      done
-    );
-  });
-
-  // clean the html build directory
-  gulp.task('html:clean', function() {
-    return gulp.src(HTML_BUILD + '/**/*.html', { read: false })
-      .pipe(plugins.rimraf());
-  });
-
-  // inject dependencies into html and output to build directory
-  gulp.task('html:build', function() {
-    return gulp.src(HTML_SRC + '/**/*.html').pipe(plugins.semiflat(HTML_SRC))
-      .pipe(plugins.plumber())
-      .pipe(traceur.injectAppJSCSS(JS_BUILD, CSS_BUILD))
-      .pipe(wiredep.stream())
-      .pipe(gulp.dest(HTML_BUILD));
-  });
-
   // CSS ---------------------------------
   gulp.task('css', function(done) {
     console.log(hr('-', 80, 'css'));
@@ -187,7 +181,7 @@
         console.log('\n!!! TODO parse this error: ' + error + '\n');
       }
     }
-    return gulp.src(CSS_SRC + '/**/*.scss').pipe(plugins.semiflat(CSS_SRC))
+    return cssSrcStream()
       .on('data', function(file) {
         current = file;
       })
@@ -200,65 +194,108 @@
       .pipe(gulp.dest(CSS_BUILD));
   });
 
+  // HTML ---------------------------------
+  gulp.task('html', function(done) {
+    console.log(hr('-', 80, 'html'));
+    runSequence(
+      'html:clean',
+      'html:build',
+      done
+    );
+  });
+
+  // clean the html build directory
+  gulp.task('html:clean', function() {
+    return gulp.src(HTML_BUILD + '/**/*.html', { read: false })
+      .pipe(plugins.rimraf());
+  });
+
+  // inject dependencies into html and output to build directory
+  gulp.task('html:build', function() {
+    return gulp.src(HTML_SRC + '/**/*.html').pipe(plugins.semiflat(HTML_SRC))
+      .pipe(plugins.plumber())
+      .pipe(traceur.injectAppJSCSS(JS_BUILD, CSS_BUILD))
+      .pipe(wiredep.stream())
+      .pipe(gulp.dest(HTML_BUILD));
+  });
+
   // WATCH ---------------------------------
-  // basic watch implementation
   gulp.task('watch', [ 'server' ], function() {
 
-    // rebuild
+    // actions on watch trigger
+    function htmlReload(done) {
+      return function() {
+        runSequence('html', 'reload', done);
+      };
+    }
+    function jsHtmlReload(done) {
+      return function() {
+        runSequence('js', htmlReload(done));
+      };
+    }
+    function cssHtmlReload(done) {
+      return function() {
+        runSequence('css', htmlReload(done));
+      };
+    }
+
+    // watch statements
     plugins.watch({
-      name: 'JAVASCRIPT',
+      name: 'JS LIB',
       emitOnGlob: false,
       glob: [
         JS_LIB_BOWER + '/**/*.js',
-        JS_LIB_LOCAL + '/**/*.js',
-        JS_SRC       + '/**/*.js'
+        JS_LIB_LOCAL + '/**/*.js'
       ]
-    }, [ 'js' ]);
+    }, function(files, done) {
+      console.log('\n' + hr('\u2591', 80) + '\n');
+      jsHtmlReload(done)(); // html will be needed in case previous js injection failed
+    });
+
+    plugins.watch({
+      name: 'CSS LIB',
+      emitOnGlob: false,
+      glob: [
+        CSS_LIB_BOWER + '/**/*.scss',
+        CSS_LIB_LOCAL + '/**/*.scss'
+      ]
+    }, function(files, done) {
+      console.log('\n' + hr('\u2591', 80) + '\n');
+      cssHtmlReload(done)(); // html will be needed in case previous css injection failed
+    });
+
+    plugins.watch({
+      name: 'JS',
+      emitOnGlob: false,
+      glob: [
+        JS_SRC + '/**/*.js'
+      ]
+    }, function(files, done) {
+      console.log('\n' + hr('\u2591', 80) + '\n');
+      jsHtmlReload(done)();
+    });
+
     plugins.watch({
       name: 'CSS',
       emitOnGlob: false,
       glob: [
-        CSS_LIB_BOWER + '/**/*.scss',
-        CSS_LIB_LOCAL + '/**/*.scss',
-        CSS_SRC       + '/**/*.scss'
+        CSS_SRC + '/**/*.scss'
       ]
-    }, [ 'css' ]);
+    }, function(files, done) {
+      console.log('\n' + hr('\u2591', 80) + '\n');
+      cssHtmlReload(done)();
+    });
 
-    // rewire dependencies
     plugins.watch({
-      name: 'HTML',
+      name: 'HTML | BOWER',
       emitOnGlob: false,
       glob: [
-        HTML_SRC  + '/**/*.html',
-        BOWER     + '/*',
-        JS_BUILD  + '/**/*.js',
-        CSS_BUILD + '/**/*.css'
+        BOWER + '/**/*',
+        HTML_SRC + '/**/*.html'
       ]
-    }, [ 'html' ]);
-
-    // reload
-    plugins.watch({
-      name: 'RELOAD',
-      emitOnGlob: true,
-      glob: [
-          HTML_BUILD + '/**/*.html'
-      ]
-    }, function() {
-      browserSync.reload();
-      console.log(hr('-', 80, 'reload'));
-    });
-  });
-
-  // use browsersync for serving the application, its dependencies and is sources
-  gulp.task('server', [ 'build' ], function() {
-    browserSync({
-      server: {
-        baseDir: HTML_BUILD,
-        routes: routes()
-      },
-      port: 8000,
-      logLevel: 'silent',
-      open: false
+    }, function(files, done) {
+      console.log('\n' + hr('\u2591', 80) + '\n');
+      htmlReload(done)();
     });
   });
 
