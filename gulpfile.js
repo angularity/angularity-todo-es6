@@ -1,5 +1,7 @@
 /* global require:false */
 /* global console:false */
+/* global setTimeout:false */
+/* global clearTimeout:false */
 (function() {
   'use strict';
 
@@ -10,6 +12,9 @@
   var wiredep     = require('wiredep');
   var browserSync = require('browser-sync');
   var path        = require('path');
+
+  var HTTP_PORT     = 8000;
+  var CONSOLE_WIDTH = 80;
 
   var TEMP          = '.build';
   var BOWER         = 'bower_components';
@@ -59,6 +64,7 @@
 	  return result;
   }
 
+  // UTILITY ---------------------------------
   function hr(char, length, title) {
     var text = (title) ? (' ' + title.split('').join(' ').toUpperCase() + ' ') : '';
     while (text.length < length) {
@@ -67,37 +73,65 @@
     return text;
   }
 
+  function mergeSequences() {
+    var lists = Array.prototype.slice.call(arguments).map(function(candidate) {
+      return (candidate instanceof Array) ? candidate.concat() : [ ];
+    });
+    var methods = [ ];
+    var results = [ function() {
+      methods.forEach(function(method) {
+        method.call();
+      });
+    }];
+    function eachList(list) {
+      if (list.length) {
+        var item   = list.pop();
+        var target = (typeof item === 'function') ? methods : (item) ? results : null;
+        if ((target) && (target.indexOf(item) < 0)) {
+          target.unshift(item);
+        }
+        return true;
+      } else {
+        return false;
+      }
+    }
+    while (lists.length) {
+      lists = lists.filter(eachList);
+    }
+    return results;
+  }
+
   // DEFAULT ---------------------------------
   gulp.task('default', [ 'watch' ]);
 
   gulp.task('build', function(done) {
-    console.log(hr('-', 80, 'build'));
+    console.log(hr('-', CONSOLE_WIDTH, 'build'));
     runSequence('js', 'css', 'html', done);
   });
 
   // SERVER ---------------------------------
   gulp.task('server', [ 'build' ], function() {
-    console.log(hr('-', 80, 'server'));
+    console.log(hr('-', CONSOLE_WIDTH, 'server'));
     browserSync({
       server: {
         baseDir: HTML_BUILD,
         routes: routes()
       },
-      port: 8000,
+      port: HTTP_PORT,
       logLevel: 'silent',
       open: false
     });
   });
 
   gulp.task('reload', function() {
-    console.log(hr('-', 80, 'reload'));
+    console.log(hr('-', CONSOLE_WIDTH, 'reload'));
     browserSync.reload();
   });
 
   // JS ---------------------------------
   gulp.task('js', function(done) {
-    console.log(hr('-', 80, 'javascript'));
-    traceur = plugins.traceurOut(TEMP, 80);
+    console.log(hr('-', CONSOLE_WIDTH, 'javascript'));
+    traceur = plugins.traceurOut(TEMP, CONSOLE_WIDTH);
     runSequence(
       [ 'js:clean', 'tmp:clean' ],
       'js:init',
@@ -140,7 +174,7 @@
 
   // CSS ---------------------------------
   gulp.task('css', function(done) {
-    console.log(hr('-', 80, 'css'));
+    console.log(hr('-', CONSOLE_WIDTH, 'css'));
     runSequence(
       'css:clean',
       'css:init',
@@ -196,7 +230,7 @@
 
   // HTML ---------------------------------
   gulp.task('html', function(done) {
-    console.log(hr('-', 80, 'html'));
+    console.log(hr('-', CONSOLE_WIDTH, 'html'));
     runSequence(
       'html:clean',
       'html:build',
@@ -222,21 +256,17 @@
   // WATCH ---------------------------------
   gulp.task('watch', [ 'server' ], function() {
 
-    // actions on watch trigger
-    function htmlReload(done) {
-      return function() {
-        runSequence('html', 'reload', done);
-      };
-    }
-    function jsHtmlReload(done) {
-      return function() {
-        runSequence('js', htmlReload(done));
-      };
-    }
-    function cssHtmlReload(done) {
-      return function() {
-        runSequence('css', htmlReload(done));
-      };
+    // enqueue actions to avoid multiple trigger
+    var timeout;
+    var queue;
+    function enqueue() {
+      queue = mergeSequences(queue, Array.prototype.slice.call(arguments));
+      clearTimeout(timeout);
+      timeout = (queue.length < 2) ? 0 : setTimeout(function() {
+        console.log(hr('\u2591', CONSOLE_WIDTH));
+        runSequence.apply(null, queue);
+        queue = null;
+      }, 500); // this needs to be at least 250ms
     }
 
     // watch statements
@@ -248,8 +278,7 @@
         JS_LIB_LOCAL + '/**/*.js'
       ]
     }, function(files, done) {
-      console.log('\n' + hr('\u2591', 80) + '\n');
-      jsHtmlReload(done)(); // html will be needed in case previous js injection failed
+      enqueue('js', 'html', 'reload', done); // html will be needed in case previous injection failed
     });
 
     plugins.watch({
@@ -260,8 +289,7 @@
         CSS_LIB_LOCAL + '/**/*.scss'
       ]
     }, function(files, done) {
-      console.log('\n' + hr('\u2591', 80) + '\n');
-      cssHtmlReload(done)(); // html will be needed in case previous css injection failed
+      enqueue('css', 'html', 'reload', done); // html will be needed in case previous injection failed
     });
 
     plugins.watch({
@@ -271,8 +299,7 @@
         JS_SRC + '/**/*.js'
       ]
     }, function(files, done) {
-      console.log('\n' + hr('\u2591', 80) + '\n');
-      jsHtmlReload(done)();
+      enqueue('js', 'html', 'reload', done);
     });
 
     plugins.watch({
@@ -282,8 +309,7 @@
         CSS_SRC + '/**/*.scss'
       ]
     }, function(files, done) {
-      console.log('\n' + hr('\u2591', 80) + '\n');
-      cssHtmlReload(done)();
+      enqueue('css', 'html', 'reload', done);
     });
 
     plugins.watch({
@@ -294,8 +320,7 @@
         HTML_SRC + '/**/*.html'
       ]
     }, function(files, done) {
-      console.log('\n' + hr('\u2591', 80) + '\n');
-      htmlReload(done)();
+      enqueue('html', 'reload', done);
     });
   });
 
