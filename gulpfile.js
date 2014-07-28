@@ -2,6 +2,7 @@
 /* global console:false */
 /* global setTimeout:false */
 /* global clearTimeout:false */
+/* global Buffer:false */
 (function() {
   'use strict';
 
@@ -12,6 +13,8 @@
   var wiredep     = require('wiredep');
   var browserSync = require('browser-sync');
   var path        = require('path');
+  var sass        = require('node-sass');
+  var through     = require('through2');
 
   var HTTP_PORT     = 8000;
   var CONSOLE_WIDTH = 80;
@@ -149,7 +152,7 @@
 
   // clean the js build directory
   gulp.task('js:clean', function() {
-    return gulp.src(JS_BUILD + '/**/*.js', { read: false })
+    return gulp.src(JS_BUILD + '/**/*.js*', { read: false })
       .pipe(plugins.rimraf());
   });
 
@@ -176,8 +179,7 @@
   gulp.task('css', function(done) {
     console.log(hr('-', CONSOLE_WIDTH, 'css'));
     runSequence(
-      'css:clean',
-      'css:init',
+      [ 'css:clean', 'css:init' ],
       'css:build',
       done
     );
@@ -187,7 +189,7 @@
 
   // clean the css build directory
   gulp.task('css:clean', function() {
-    return gulp.src(CSS_BUILD + '/**/*.css', { read: false })
+    return gulp.src(CSS_BUILD + '/**/*.css*', { read: false })
       .pipe(plugins.rimraf());
   });
 
@@ -204,26 +206,48 @@
 
   // compile sass with the previously discovered lib paths
   gulp.task('css:build', function () {
-    var current;
-    function sassReporter(error) {
-      var analysis = (/(.*)\:(\d+)\:\s*error:\s*(.*)/).exec(error);
-      if (analysis) {
-        var filename = (analysis[1] === 'source string') ? current.path : path.resolve(analysis[1] + '.scss');
-        var message  = filename + ':' + analysis[2] + ':0: ' + analysis[3];
-        console.log('\n' + message + '\n');
-      } else {
-        console.log('\n!!! TODO parse this error: ' + error + '\n');
-      }
-    }
     return cssSrcStream()
-      .on('data', function(file) {
-        current = file;
-      })
       .pipe(plugins.plumber())
-      .pipe(plugins.sass({
-        includePaths: cssLibs,
-//        sourceComments: 'map',
-        onError: sassReporter
+      .pipe(through.obj(function(file, encoding, done) {
+        var mapPath = path.basename(file.path).replace(/\.scss$/, '.css.map');
+        var stream  = this;
+        var stats   = { };
+        function pushResult(contents, ext) {
+          var pending      = new plugins.util.File();
+          pending.cwd      = file.cwd;
+          pending.base     = file.base;
+          pending.path     = file.path.replace(path.extname(file.path), ext);
+          pending.contents = new Buffer(contents);
+          stream.push(pending);
+        }
+        sass.render({
+          file: file.path,
+          success: function(css, map) {
+            var sourceMap = JSON.parse(map);
+            delete sourceMap.file;
+            delete sourceMap.sourcesContent;
+            sourceMap.sources.forEach(function(source, i, array) {
+              array[i] = plugins.slash(path.resolve('/' + source)); // ensure root relative
+            });
+            pushResult(css, '.css');
+            pushResult(JSON.stringify(sourceMap, null, '  '), '.css.map');
+            done();
+          },
+          error: function(error) {
+            var analysis = (/(.*)\:(\d+)\:\s*error:\s*(.*)/).exec(error);
+            if (analysis) {
+              var filename = (analysis[1] === 'source string') ? file.path : path.resolve(analysis[1] + '.scss');
+              var message  = filename + ':' + analysis[2] + ':0: ' + analysis[3];
+              console.log('\n' + message + '\n');
+            } else {
+              console.log('\n!!! TODO parse this error: ' + error + '\n');
+            }
+          },
+          includePaths: cssLibs,
+          outputStyle: 'compressed',
+          stats: stats,
+          sourceMap: mapPath
+        });
       }))
       .pipe(gulp.dest(CSS_BUILD));
   });
