@@ -11,13 +11,13 @@ gulp
 
 This will make available the following applications:
 
-[http://localhost:8000/app1.html](http://localhost:8000/app1)
+[http://localhost:8000/app1](http://localhost:8000/app1)
 
-[http://localhost:8000/app2.html](http://localhost:8000/app2)
+[http://localhost:8000/app2](http://localhost:8000/app2)
 
 As well as app1 repeated in a subdirectory to give app3.
 
-[http://localhost:8000/sub/app3.html](http://localhost:8000/sub/app3)
+[http://localhost:8000/sub/app3](http://localhost:8000/sub/app3)
 
 ### Aim
 
