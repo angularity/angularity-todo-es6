@@ -26,6 +26,7 @@
 "through2": "latest",
 "gulp-util": "latest",
 "gulp-slash": "latest",
+"minimatch": "latest",
     "gulp": "latest",
     "gulp-load-plugins": "latest",
     "gulp-rimraf": "latest",

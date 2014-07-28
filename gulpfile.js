@@ -15,6 +15,7 @@
   var path        = require('path');
   var sass        = require('node-sass');
   var through     = require('through2');
+  var minimatch   = require('minimatch');
 
   var HTTP_PORT     = 8000;
   var CONSOLE_WIDTH = 80;
@@ -223,12 +224,14 @@
         sass.render({
           file: file.path,
           success: function(css, map) {
-            var sourceMap = JSON.parse(map);
+            var source = minimatch.makeRe(file.cwd).source
+              .replace(/^\^|\$$/g, '')          // match text anywhere on the line by removing line start/end
+              .replace(/\\\//g, '[\\\\\\/]') +  // detect any platform path format
+              '|\\.\\.\\/';  			              // relative paths are an artefact and can be removed
+          var parsable  = plugins.slash(map.replace(new RegExp(source, 'g'), ''));
+            var sourceMap = JSON.parse(parsable);
             delete sourceMap.file;
             delete sourceMap.sourcesContent;
-            sourceMap.sources.forEach(function(source, i, array) {
-              array[i] = plugins.slash(path.resolve('/' + source)); // ensure root relative
-            });
             pushResult(css, '.css');
             pushResult(JSON.stringify(sourceMap, null, '  '), '.css.map');
             done();
