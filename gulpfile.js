@@ -1,8 +1,5 @@
 /* global require:false */
 /* global console:false */
-/* global setTimeout:false */
-/* global clearTimeout:false */
-/* global Buffer:false */
 (function() {
   'use strict';
 
@@ -12,10 +9,6 @@
   var runSequence = require('run-sequence');
   var wiredep     = require('wiredep');
   var browserSync = require('browser-sync');
-  var path        = require('path');
-  var sass        = require('node-sass');
-  var through     = require('through2');
-  var minimatch   = require('minimatch');
 
   var HTTP_PORT     = 8000;
   var CONSOLE_WIDTH = 80;
@@ -37,27 +30,28 @@
   var HTML_BUILD    = 'build';
 
   var traceur;
+  var sass;
 
-  function jsLibStream() {
+  function jsLibStream(opts) {
     return combined.create()
-      .append(gulp.src(JS_LIB_BOWER + '/**/*.js').pipe(plugins.semiflat(JS_LIB_BOWER)))  // bower lib first
-      .append(gulp.src(JS_LIB_LOCAL + '/**/*.js').pipe(plugins.semiflat(JS_LIB_LOCAL))); // local lib may overwrite
+      .append(gulp.src(JS_LIB_BOWER + '/**/*.js', opts).pipe(plugins.semiflat(JS_LIB_BOWER)))  // bower lib first
+      .append(gulp.src(JS_LIB_LOCAL + '/**/*.js', opts).pipe(plugins.semiflat(JS_LIB_LOCAL))); // lib may overwrite
   }
 
-  function jsSrcStream() {
+  function jsSrcStream(opts) {
     return combined.create()
-      .append(gulp.src(JS_SRC + '/**/*.js').pipe(plugins.semiflat(JS_SRC)));  // application js
+      .append(gulp.src(JS_SRC + '/**/*.js', opts).pipe(plugins.semiflat(JS_SRC)));  // application js
   }
 
-  function cssLibStream() {
+  function cssLibStream(opts) {
     return combined.create()
-      .append(gulp.src(CSS_LIB_BOWER + '/**/*.scss').pipe(plugins.semiflat(CSS_LIB_BOWER)))  // bower lib first
-      .append(gulp.src(CSS_LIB_LOCAL + '/**/*.scss').pipe(plugins.semiflat(CSS_LIB_LOCAL))); // local lib may overwrite
+      .append(gulp.src(CSS_LIB_BOWER + '/**/*.scss', opts).pipe(plugins.semiflat(CSS_LIB_BOWER)))  // bower lib first
+      .append(gulp.src(CSS_LIB_LOCAL + '/**/*.scss', opts).pipe(plugins.semiflat(CSS_LIB_LOCAL))); // lib may overwrite
   }
 
-  function cssSrcStream() {
+  function cssSrcStream(opts) {
     return combined.create()
-      .append(gulp.src(CSS_SRC + '/**/*.scss').pipe(plugins.semiflat(CSS_SRC)));  // application css
+      .append(gulp.src(CSS_SRC + '/**/*.scss', opts).pipe(plugins.semiflat(CSS_SRC)));  // application css
   }
 
   function routes() {
@@ -68,43 +62,6 @@
 	  return result;
   }
 
-  // UTILITY ---------------------------------
-  function hr(char, length, title) {
-    var text = (title) ? (' ' + title.split('').join(' ').toUpperCase() + ' ') : '';
-    while (text.length < length) {
-      text = (char + text + char).slice(0, length);
-    }
-    return text;
-  }
-
-  function mergeSequences() {
-    var lists = Array.prototype.slice.call(arguments).map(function(candidate) {
-      return (candidate instanceof Array) ? candidate.concat() : [ ];
-    });
-    var methods = [ ];
-    var results = [ function() {
-      methods.forEach(function(method) {
-        method.call();
-      });
-    }];
-    function eachList(list) {
-      if (list.length) {
-        var item   = list.pop();
-        var target = (typeof item === 'function') ? methods : (item) ? results : null;
-        if ((target) && (target.indexOf(item) < 0)) {
-          target.unshift(item);
-        }
-        return true;
-      } else {
-        return false;
-      }
-    }
-    while (lists.length) {
-      lists = lists.filter(eachList);
-    }
-    return results;
-  }
-
   // DEFAULT ---------------------------------
   gulp.task('default', [ 'watch' ]);
 
@@ -112,6 +69,14 @@
     console.log(hr('-', CONSOLE_WIDTH, 'build'));
     runSequence('js', 'css', 'html', done);
   });
+
+  function hr(char, length, title) {
+    var text = (title) ? (' ' + title.split('').join(' ').toUpperCase() + ' ') : '';  // double spaced title text
+    while (text.length < length) {
+      text = char + text + char;  // centre title between the given character
+    }
+    return text.slice(0, length); // enforce length, left justified
+  }
 
   // SERVER ---------------------------------
   gulp.task('server', [ 'build' ], function() {
@@ -135,7 +100,7 @@
   // JS ---------------------------------
   gulp.task('js', function(done) {
     console.log(hr('-', CONSOLE_WIDTH, 'javascript'));
-    traceur = plugins.traceurOut(TEMP, CONSOLE_WIDTH);
+    traceur = plugins.traceurOut(TEMP);
     runSequence(
       [ 'js:clean', 'tmp:clean' ],
       'js:init',
@@ -163,7 +128,7 @@
       .append(jsLibStream().pipe(traceur.libraries()))
       .append(jsSrcStream().pipe(traceur.sources()))
       .pipe(plugins.jshint())
-      .pipe(traceur.jsHintReporter());
+      .pipe(traceur.jsHintReporter(CONSOLE_WIDTH));
   });
 
   // resolve all imports for the source files to give a single optimised js file
@@ -171,7 +136,7 @@
   gulp.task('js:build', function() {
     return gulp.src(JS_SRC + '/**/*.js', { read: false })
       .pipe(traceur.transpile())
-      .pipe(traceur.traceurReporter())
+      .pipe(traceur.traceurReporter(CONSOLE_WIDTH))
       .pipe(traceur.adjustSourceMaps())
       .pipe(gulp.dest(JS_BUILD));
   });
@@ -186,8 +151,6 @@
     );
   });
 
-  var cssLibs;
-
   // clean the css build directory
   gulp.task('css:clean', function() {
     return gulp.src(CSS_BUILD + '/**/*.css*', { read: false })
@@ -196,62 +159,16 @@
 
   // discover css libs
   gulp.task('css:init', function() {
-    cssLibs = [ ];
-    return cssLibStream()
-      .on('data', function(file) {
-        if (cssLibs.indexOf(file.base) < 0) {
-          cssLibs.push(file.base);
-        }
-      });
+    sass = plugins.sassAlt();
+    return cssLibStream({ read: false })
+      .pipe(sass.libraries());
   });
 
   // compile sass with the previously discovered lib paths
   gulp.task('css:build', function () {
-    return cssSrcStream()
-      .pipe(plugins.plumber())
-      .pipe(through.obj(function(file, encoding, done) {
-        var mapPath = path.basename(file.path).replace(/\.scss$/, '.css.map');
-        var stream  = this;
-        var stats   = { };
-        function pushResult(contents, ext) {
-          var pending      = new plugins.util.File();
-          pending.cwd      = file.cwd;
-          pending.base     = file.base;
-          pending.path     = file.path.replace(path.extname(file.path), ext);
-          pending.contents = new Buffer(contents);
-          stream.push(pending);
-        }
-        sass.render({
-          file: file.path,
-          success: function(css, map) {
-            var source = minimatch.makeRe(file.cwd).source
-              .replace(/^\^|\$$/g, '')          // match text anywhere on the line by removing line start/end
-              .replace(/\\\//g, '[\\\\\\/]') +  // detect any platform path format
-              '|\\.\\.\\/';  			              // relative paths are an artefact and can be removed
-          var parsable  = plugins.slash(map.replace(new RegExp(source, 'g'), ''));
-            var sourceMap = JSON.parse(parsable);
-            delete sourceMap.file;
-            delete sourceMap.sourcesContent;
-            pushResult(css, '.css');
-            pushResult(JSON.stringify(sourceMap, null, '  '), '.css.map');
-            done();
-          },
-          error: function(error) {
-            var analysis = (/(.*)\:(\d+)\:\s*error:\s*(.*)/).exec(error);
-            if (analysis) {
-              var filename = (analysis[1] === 'source string') ? file.path : path.resolve(analysis[1] + '.scss');
-              var message  = filename + ':' + analysis[2] + ':0: ' + analysis[3];
-              console.log('\n' + message + '\n');
-            } else {
-              console.log('\n!!! TODO parse this error: ' + error + '\n');
-            }
-          },
-          includePaths: cssLibs,
-          outputStyle: 'compressed',
-          stats: stats,
-          sourceMap: mapPath
-        });
-      }))
+    return cssSrcStream({ read: false })
+      .pipe(sass.transpile())
+      .pipe(sass.sassReporter())
       .pipe(gulp.dest(CSS_BUILD));
   });
 
@@ -275,7 +192,8 @@
   gulp.task('html:build', function() {
     return gulp.src(HTML_SRC + '/**/*.html').pipe(plugins.semiflat(HTML_SRC))
       .pipe(plugins.plumber())
-      .pipe(traceur.injectAppJSCSS(JS_BUILD, CSS_BUILD))
+      .pipe(traceur.injectAppJS(JS_BUILD))
+      .pipe(sass.injectAppCSS(CSS_BUILD))
       .pipe(wiredep.stream())
       .pipe(gulp.dest(HTML_BUILD));
   });
@@ -284,71 +202,39 @@
   gulp.task('watch', [ 'server' ], function() {
 
     // enqueue actions to avoid multiple trigger
-    var timeout;
-    var queue;
-    function enqueue() {
-      queue = mergeSequences(queue, Array.prototype.slice.call(arguments));
-      clearTimeout(timeout);
-      timeout = (queue.length < 2) ? 0 : setTimeout(function() {
-        console.log(hr('\u2591', CONSOLE_WIDTH));
-        runSequence.apply(null, queue);
-        queue = null;
-      }, 500); // this needs to be at least 250ms
-    }
+    var queue = plugins.watchSequence(500, function() {
+      console.log(hr('\u2591', CONSOLE_WIDTH));
+    });
 
     // watch statements
-    plugins.watch({
-      name: 'JS LIB',
-      emitOnGlob: false,
-      glob: [
-        JS_LIB_BOWER + '/**/*.js',
-        JS_LIB_LOCAL + '/**/*.js'
-      ]
-    }, function(files, done) {
-      enqueue('js', 'html', 'reload', done); // html will be needed in case previous injection failed
-    });
-
-    plugins.watch({
-      name: 'CSS LIB',
-      emitOnGlob: false,
-      glob: [
-        CSS_LIB_BOWER + '/**/*.scss',
-        CSS_LIB_LOCAL + '/**/*.scss'
-      ]
-    }, function(files, done) {
-      enqueue('css', 'html', 'reload', done); // html will be needed in case previous injection failed
-    });
-
     plugins.watch({
       name: 'JS',
       emitOnGlob: false,
       glob: [
-        JS_SRC + '/**/*.js'
+        JS_LIB_BOWER + '/**/*.js',
+        JS_LIB_LOCAL + '/**/*.js',
+        JS_SRC       + '/**/*.js'
       ]
-    }, function(files, done) {
-      enqueue('js', 'html', 'reload', done);
-    });
+    }, queue.getHandler('js', 'html', 'reload')); // html will be needed in case previous injection failed
 
     plugins.watch({
       name: 'CSS',
       emitOnGlob: false,
       glob: [
-        CSS_SRC + '/**/*.scss'
+        CSS_LIB_BOWER + '/**/*.scss',
+        CSS_LIB_LOCAL + '/**/*.scss',
+        CSS_SRC       + '/**/*.scss'
       ]
-    }, function(files, done) {
-      enqueue('css', 'html', 'reload', done);
-    });
+    }, queue.getHandler('css', 'html', 'reload')); // html will be needed in case previous injection failed
 
     plugins.watch({
       name: 'HTML | BOWER',
       emitOnGlob: false,
       glob: [
-        BOWER + '/**/*',
+        BOWER    + '/**/*',
         HTML_SRC + '/**/*.html'
       ]
-    }, function(files, done) {
-      enqueue('html', 'reload', done);
-    });
+    }, queue.getHandler('html', 'reload'));
   });
 
 }());

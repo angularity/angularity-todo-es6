@@ -19,14 +19,8 @@
   "dependencies": {
 	  "bower": "latest",
     "combined-stream": "latest",
-    "run-sequence": "latest",
     "wiredep": "latest",
     "browser-sync": "latest",
-"node-sass": "latest",
-"through2": "latest",
-"gulp-util": "latest",
-"gulp-slash": "latest",
-"minimatch": "latest",
     "gulp": "latest",
     "gulp-load-plugins": "latest",
     "gulp-rimraf": "latest",
@@ -36,6 +30,8 @@
     "gulp-filter": "latest",
     "gulp-plumber": "latest",
     "gulp-semiflat": "latest",
-    "gulp-traceur-out": "latest"
+    "gulp-traceur-out": "latest",
+    "gulp-sass-alt": "latest",
+    "gulp-watch-sequence": "latest"
   }
 }

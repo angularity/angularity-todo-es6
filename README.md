@@ -2,7 +2,7 @@
 
 > Proof of concept for es6 modules from source mixed with bower packages
 
-### Usage
+## Usage
 
 ```javascript
 npm install
@@ -19,37 +19,43 @@ As well as app1 repeated in a subdirectory to give app3.
 
 [http://localhost:8000/sub/app3](http://localhost:8000/sub/app3)
 
-### Aim
+## Aim
 
-Solve the **module problem** - How to selectively include code that has be authored in a separate project path.
+Solve the **module** problem of how to selectively include code that has be authored in a separate project path.
 
 Ideally add some syntactic sugar for **classes** without substantially deviating from javascript syntax.
 
-### Requirements
+## Requirements
 
-A single javascript file exists for each html file, locally in the `src` directory. They are identified by the `js` path.
+A single javascript file exists for each html file, locally in the `src` directory. They are identified by the `js`
+path.
 
-These application javascript files include library code by [Ecmascript6(ES6)](http://wiki.ecmascript.org/doku.php?id=harmony:modules) import. Such library code is available
-in `bower` packages and locally in the `src` directory. They are identified by the `js-lib` path.
+These application javascript files include library code by [Ecmascript6(ES6)]
+(http://wiki.ecmascript.org/doku.php?id=harmony:modules) import. Such library code is available in `bower` packages and
+locally in the `src` directory. They are identified by the `js-lib` path.
 
-The application files typically provide configuration and IOC mappings, such as `angular.module().service()`.
-The library files typically implement classes to be used in such IOC mappings.
+The application files typically provide configuration and IOC mappings, such as `angular.module().service()`. The
+library files typically implement classes to be used in such IOC mappings.
 
 The ES6 `import` syntax must be the same for any source, such that:
 
-1. Local library code may be arbitarily moved to packages, or
+1. Local library code may be arbitrarily moved to packages, or
 2. Package code may be overriden by local code
 
-[Source maps](http://blog.teamtreehouse.com/introduction-source-maps) must be generated for all transpiled code
-and map to the correct source.
+[Source maps](http://blog.teamtreehouse.com/introduction-source-maps) must be generated for all transpiled code and map
+to the correct source.
 
-### Comparisons
+## Comparisons
 
-This solution is inflenced by [Guy Bedford's article](http://guybedford.com/practical-workflows-for-es6-modules).
+This solution is influenced by [Guy Bedford's article](http://guybedford.com/practical-workflows-for-es6-modules).
 
-It arguably duplicates the functionality of [Browserify](http://browserify.org/). Please consider which implementation best suits your needs.
+It arguably duplicates the functionality of [Browserify](http://browserify.org/). Please consider which implementation
+best suits your needs.
 
-### How it works
+It presumes that you are using a single top-level Ecmascript 6 file for each HTML file you are publishing. This top
+level JS file imports JS from library paths that may need to be discovered by globing.
+
+## How it works
 
 The google originated [Tracur](https://github.com/google/traceur-compiler) compiler provides support for a subset
 of ES6 features. These are sufficient to address the stated aims.
