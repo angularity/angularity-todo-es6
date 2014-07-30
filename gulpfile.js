@@ -134,7 +134,7 @@
   // resolve all imports for the source files to give a single optimised js file
   //  in the build directory with source map for each
   gulp.task('js:build', function() {
-    return gulp.src(JS_SRC + '/**/*.js', { read: false })
+    return jsSrcStream({ read: false })
       .pipe(traceur.transpile())
       .pipe(traceur.traceurReporter(CONSOLE_WIDTH))
       .pipe(traceur.adjustSourceMaps())
