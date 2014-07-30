@@ -21,6 +21,7 @@
     "combined-stream": "latest",
     "wiredep": "latest",
     "browser-sync": "latest",
+    "node-bourbon": "latest",
     "gulp": "latest",
     "gulp-load-plugins": "latest",
     "gulp-rimraf": "latest",

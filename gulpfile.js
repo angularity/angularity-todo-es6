@@ -9,6 +9,7 @@
   var runSequence = require('run-sequence');
   var wiredep     = require('wiredep');
   var browserSync = require('browser-sync');
+  var bourbon     = require('node-bourbon');
 
   var HTTP_PORT     = 8000;
   var CONSOLE_WIDTH = 80;
@@ -161,7 +162,7 @@
   gulp.task('css:init', function() {
     sass = plugins.sassAlt();
     return cssLibStream({ read: false })
-      .pipe(sass.libraries());
+      .pipe(sass.libraries(bourbon.includePaths));
   });
 
   // compile sass with the previously discovered lib paths
