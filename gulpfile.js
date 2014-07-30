@@ -168,7 +168,7 @@
   gulp.task('css:build', function () {
     return cssSrcStream({ read: false })
       .pipe(sass.transpile())
-      .pipe(sass.sassReporter())
+      .pipe(sass.sassReporter(CONSOLE_WIDTH))
       .pipe(gulp.dest(CSS_BUILD));
   });
 
