@@ -35,24 +35,36 @@
 
   function jsLibStream(opts) {
     return combined.create()
-      .append(gulp.src(JS_LIB_BOWER + '/**/*.js', opts).pipe(plugins.semiflat(JS_LIB_BOWER)))  // bower lib first
-      .append(gulp.src(JS_LIB_LOCAL + '/**/*.js', opts).pipe(plugins.semiflat(JS_LIB_LOCAL))); // lib may overwrite
+      .append(gulp.src(JS_LIB_BOWER + '/**/*.js', opts)                       // bower lib JS
+        .pipe(plugins.semiflat(JS_LIB_BOWER)))
+      .append(gulp.src([ JS_LIB_LOCAL + '/**/*.js', '!**/*.spec.js' ], opts)  // local lib JS overwrites
+        .pipe(plugins.semiflat(JS_LIB_LOCAL)));
   }
 
   function jsSrcStream(opts) {
     return combined.create()
-      .append(gulp.src(JS_SRC + '/**/*.js', opts).pipe(plugins.semiflat(JS_SRC)));  // application js
+      .append(gulp.src(JS_SRC + '/**/*.js', opts)                 // local app JS
+        .pipe(plugins.semiflat(JS_SRC)));
+  }
+
+  function jsSrcSpecStream(opts) {
+    return jsSrcStream(opts)                                      // local app JS
+      .append(gulp.src([ JS_LIB_LOCAL + '/**/*.spec.js' ], opts)  // local lib SPEC JS
+        .pipe(plugins.semiflat(JS_LIB_LOCAL)));
   }
 
   function cssLibStream(opts) {
     return combined.create()
-      .append(gulp.src(CSS_LIB_BOWER + '/**/*.scss', opts).pipe(plugins.semiflat(CSS_LIB_BOWER)))  // bower lib first
-      .append(gulp.src(CSS_LIB_LOCAL + '/**/*.scss', opts).pipe(plugins.semiflat(CSS_LIB_LOCAL))); // lib may overwrite
+      .append(gulp.src(CSS_LIB_BOWER + '/**/*.scss', opts)  // bower lib CSS
+        .pipe(plugins.semiflat(CSS_LIB_BOWER)))
+      .append(gulp.src(CSS_LIB_LOCAL + '/**/*.scss', opts)  // local lib CSS overwrites
+        .pipe(plugins.semiflat(CSS_LIB_LOCAL)));
   }
 
   function cssSrcStream(opts) {
     return combined.create()
-      .append(gulp.src(CSS_SRC + '/**/*.scss', opts).pipe(plugins.semiflat(CSS_SRC)));  // application css
+      .append(gulp.src(CSS_SRC + '/**/*.scss', opts)  // local app CSS
+        .pipe(plugins.semiflat(CSS_SRC)));
   }
 
   function routes() {
@@ -85,11 +97,11 @@
     browserSync({
       server: {
         baseDir: HTML_BUILD,
-        routes: routes()
+        routes:  routes()
       },
-      port: HTTP_PORT,
+      port:     HTTP_PORT,
       logLevel: 'silent',
-      open: false
+      open:     false
     });
   });
 
@@ -105,6 +117,7 @@
     runSequence(
       [ 'js:clean', 'tmp:clean' ],
       'js:init',
+      'js:unit',
       'js:build',
       'tmp:clean',
       done
@@ -126,10 +139,31 @@
   // init traceur libs and run linter
   gulp.task('js:init', function() {
     return combined.create()
-      .append(jsLibStream().pipe(traceur.libraries()))
-      .append(jsSrcStream().pipe(traceur.sources()))
+      .append(jsLibStream()
+        .pipe(traceur.libraries()))
+      .append(jsSrcSpecStream()
+        .pipe(traceur.sources()))
       .pipe(plugins.jshint())
       .pipe(traceur.jsHintReporter(CONSOLE_WIDTH));
+  });
+
+  // karma unit tests on local library only
+  gulp.task('js:unit', function() {
+    var selectJS = plugins.filter('**/*.js');
+    combined.create()
+      .append(gulp.src(wiredep().js))
+      .append(gulp.src(JS_LIB_LOCAL + '/**/*.spec.js', { read: false })
+        .pipe(traceur.transpile())
+        .pipe(traceur.traceurReporter(CONSOLE_WIDTH)))
+      .pipe(plugins.plumber())
+      .pipe(selectJS)
+      .pipe(plugins.karma({
+        frameworks: [ 'jasmine' ],
+        reporters:  [ 'spec' ],
+        browsers:   [ 'Chrome' ],
+        logLevel:   'error'
+      }));
+    return selectJS.restore({ end: true });
   });
 
   // resolve all imports for the source files to give a single optimised js file

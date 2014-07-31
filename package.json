@@ -22,17 +22,25 @@
     "wiredep": "latest",
     "browser-sync": "latest",
     "node-bourbon": "latest",
+    "run-sequence": "latest",
+    "traceur": "latest",
+    "karma": "latest",
+    "karma-jasmine": "latest",
+    "karma-chrome-launcher": "latest",
+    "karma-spec-reporter": "latest",
+    "gulp-karma": "latest",
     "gulp": "latest",
     "gulp-load-plugins": "latest",
+    "gulp-filter": "latest",
     "gulp-rimraf": "latest",
     "gulp-jshint": "latest",
     "gulp-sass": "latest",
     "gulp-watch": "latest",
+    "gulp-watch-sequence": "latest",
     "gulp-filter": "latest",
     "gulp-plumber": "latest",
     "gulp-semiflat": "latest",
     "gulp-traceur-out": "latest",
-    "gulp-sass-alt": "latest",
-    "gulp-watch-sequence": "latest"
+    "gulp-sass-alt": "latest"
   }
 }
