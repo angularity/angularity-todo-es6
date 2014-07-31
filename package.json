@@ -37,7 +37,6 @@
     "gulp-sass": "latest",
     "gulp-watch": "latest",
     "gulp-watch-sequence": "latest",
-    "gulp-filter": "latest",
     "gulp-plumber": "latest",
     "gulp-semiflat": "latest",
     "gulp-traceur-out": "latest",
