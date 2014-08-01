@@ -23,7 +23,6 @@
     "browser-sync": "latest",
     "node-bourbon": "latest",
     "run-sequence": "latest",
-    "traceur": "latest",
     "karma": "latest",
     "karma-jasmine": "latest",
     "karma-chrome-launcher": "latest",
