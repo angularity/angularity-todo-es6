@@ -158,21 +158,17 @@
   });
 
   // karma unit tests on local library only
-  gulp.task('js:unit', function(done) {
-    combined.create()
-      .append(gulp.src(wiredep().js))
-      .append(gulp.src(JS_LIB_LOCAL + '/**/*.spec.js', { read: false })
-        .pipe(traceur.transpile())
-        .pipe(traceur.traceurReporter(CONSOLE_WIDTH)))
-      .pipe(plugins.filter('**/*.js'))
-      .pipe(plugins.karma({
+  gulp.task('js:unit', function() {
+    return gulp.src(JS_LIB_LOCAL + '/**/*.spec.js', { read: false })
+      .pipe(traceur.transpile())
+      .pipe(traceur.traceurReporter(CONSOLE_WIDTH))
+      .pipe(traceur.karma({
+        files:      wiredep().js,
         frameworks: [ 'jasmine' ],
         reporters:  [ 'spec' ],
         browsers:   [ 'Chrome' ],
         logLevel:   'error'
-      }))
-      .on('end', function() { done(); })
-      .on('error', function() { done(); })
+      }, CONSOLE_WIDTH));
   });
 
   // resolve all imports for the source files to give a single optimised js file

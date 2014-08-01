@@ -27,7 +27,6 @@
     "karma-jasmine": "latest",
     "karma-chrome-launcher": "latest",
     "karma-spec-reporter": "latest",
-    "gulp-karma": "latest",
     "gulp": "latest",
     "gulp-load-plugins": "latest",
     "gulp-filter": "latest",
