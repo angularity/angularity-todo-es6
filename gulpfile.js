@@ -113,12 +113,21 @@
   // JS ---------------------------------
   gulp.task('js', function(done) {
     console.log(hr('-', CONSOLE_WIDTH, 'javascript'));
-    traceur = plugins.traceurOut(TEMP);
     runSequence(
       [ 'js:clean', 'tmp:clean' ],
       'js:init',
-      'js:unit',
       'js:build',
+      'tmp:clean',
+      done
+    );
+  });
+
+  gulp.task('test', function(done) {
+    console.log(hr('-', CONSOLE_WIDTH, 'test'));
+    runSequence(
+      'tmp:clean',
+      'js:init',
+      'js:unit',
       'tmp:clean',
       done
     );
@@ -138,6 +147,7 @@
 
   // init traceur libs and run linter
   gulp.task('js:init', function() {
+    traceur = plugins.traceurOut(TEMP);
     return combined.create()
       .append(jsLibStream()
         .pipe(traceur.libraries()))
@@ -148,22 +158,21 @@
   });
 
   // karma unit tests on local library only
-  gulp.task('js:unit', function() {
-    var selectJS = plugins.filter('**/*.js');
+  gulp.task('js:unit', function(done) {
     combined.create()
       .append(gulp.src(wiredep().js))
       .append(gulp.src(JS_LIB_LOCAL + '/**/*.spec.js', { read: false })
         .pipe(traceur.transpile())
         .pipe(traceur.traceurReporter(CONSOLE_WIDTH)))
-      .pipe(plugins.plumber())
-      .pipe(selectJS)
+      .pipe(plugins.filter('**/*.js'))
       .pipe(plugins.karma({
         frameworks: [ 'jasmine' ],
         reporters:  [ 'spec' ],
         browsers:   [ 'Chrome' ],
         logLevel:   'error'
-      }));
-    return selectJS.restore({ end: true });
+      }))
+      .on('end', function() { done(); })
+      .on('error', function() { done(); })
   });
 
   // resolve all imports for the source files to give a single optimised js file
@@ -200,7 +209,7 @@
   });
 
   // compile sass with the previously discovered lib paths
-  gulp.task('css:build', function () {
+  gulp.task('css:build', function() {
     return cssSrcStream({ read: false })
       .pipe(sass.transpile())
       .pipe(sass.sassReporter(CONSOLE_WIDTH))
