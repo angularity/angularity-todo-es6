@@ -1,2 +1,2 @@
-import {Something} from 'Something';
+import Something from 'Something';
 new Something();

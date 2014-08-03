@@ -1,2 +1,2 @@
-import {SomethingMore} from 'subdirectory/SomethingMore';
+import SomethingMore from 'subdirectory/SomethingMore';
 new SomethingMore();

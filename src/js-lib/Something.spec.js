@@ -4,7 +4,7 @@
 /* global jasmine:false */
 /* global expect:false */
 
-import { Something } from 'Something';
+import Something from 'Something';
 
 describe('Something', function() {
   'use strict';

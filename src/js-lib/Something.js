@@ -1,6 +1,6 @@
 /* global $:false */
 /* global console:false */
-export class Something {
+export default class Something {
 
   constructor() {
     this.greet('Something(src)Constructor');
