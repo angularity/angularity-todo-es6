@@ -159,7 +159,11 @@
 
   // karma unit tests on local library only
   gulp.task('js:unit', function() {
-    return gulp.src(JS_LIB_LOCAL + '/**/*.spec.js', { read: false })
+    return gulp.src(JS_LIB_LOCAL + '/**/*.spec.js')
+      .pipe(traceur.concatJasmine({
+        '@': function (file) { return file.path; }
+      }))
+      .pipe(gulp.dest(TEMP))
       .pipe(traceur.transpile())
       .pipe(traceur.traceurReporter(CONSOLE_WIDTH))
       .pipe(traceur.karma({

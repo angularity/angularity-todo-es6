@@ -6,7 +6,7 @@
 
 import Something from 'Something';
 
-describe('Something', function() {
+describe('@', function() {
   'use strict';
 
   beforeEach(function() {
