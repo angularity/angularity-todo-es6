@@ -17,6 +17,8 @@
   var TEMP          = '.build';
   var BOWER         = 'bower_components';
 
+  var BOWER_EXCLUDE = /bootstrap-sass-official/;
+
   var JS_LIB_BOWER  = 'bower_components/**/js-lib';
   var JS_LIB_LOCAL  = 'src/js-lib';
   var JS_SRC        = 'src/target';
@@ -29,6 +31,7 @@
 
   var HTML_SRC      = 'src/target';
   var HTML_BUILD    = 'build';
+  var PARTIALS_NAME = 'templates';
 
   var traceur;
   var sass;
@@ -65,6 +68,16 @@
     return combined.create()
       .append(gulp.src(CSS_SRC + '/**/*.scss', opts)  // local app CSS
         .pipe(plugins.semiflat(CSS_SRC)));
+  }
+
+  function htmlPartialsSrcStream(opts) {
+    return gulp.src(HTML_SRC + '/**/partials/**/*.html', opts)
+      .pipe(plugins.semiflat(HTML_SRC));
+  }
+
+  function htmlAppSrcStream(opts) {
+    return gulp.src([ HTML_SRC + '/**/*.html', '!**/partials/**/*' ], opts) // ignore partials
+      .pipe(plugins.semiflat(HTML_SRC));
   }
 
   function routes() {
@@ -141,7 +154,7 @@
 
   // clean the js build directory
   gulp.task('js:clean', function() {
-    return gulp.src(JS_BUILD + '/**/*.js*', { read: false })
+    return gulp.src([ JS_BUILD + '/**/*.js*', '!**/*.*.js' ], { read: false })
       .pipe(plugins.rimraf());
   });
 
@@ -221,24 +234,44 @@
     console.log(hr('-', CONSOLE_WIDTH, 'html'));
     runSequence(
       'html:clean',
-      'html:build',
+      'html:partials',
+      'html:inject',
       done
     );
   });
 
   // clean the html build directory
   gulp.task('html:clean', function() {
-    return gulp.src(HTML_BUILD + '/**/*.html', { read: false })
+    return gulp.src(HTML_BUILD + '/**/*.html*', { read: false })
       .pipe(plugins.rimraf());
   });
 
+  // convert partials into template js
+  gulp.task('html:partials', function() {
+    return htmlPartialsSrcStream()
+      .pipe(plugins.plumber())
+      .pipe(plugins.minifyHtml({
+        empty:  true,
+        spare:  true,
+        quotes: true
+      }))
+      .pipe(plugins.ngHtml2js({
+        moduleName: PARTIALS_NAME
+      }))
+      .pipe(plugins.concat(PARTIALS_NAME + '.html.js'))
+      .pipe(gulp.dest(JS_BUILD));
+  });
+
   // inject dependencies into html and output to build directory
-  gulp.task('html:build', function() {
-    return gulp.src(HTML_SRC + '/**/*.html').pipe(plugins.semiflat(HTML_SRC))
+  gulp.task('html:inject', function() {
+    return htmlAppSrcStream()
       .pipe(plugins.plumber())
       .pipe(traceur.injectAppJS(JS_BUILD))
       .pipe(sass.injectAppCSS(CSS_BUILD))
-      .pipe(wiredep.stream())
+      .pipe(wiredep.stream({
+        ignorePath: /..(?:\/\.{2})*/,  // use root relative path for bower directory
+        exclude:    BOWER_EXCLUDE
+      }))
       .pipe(gulp.dest(HTML_BUILD));
   });
 

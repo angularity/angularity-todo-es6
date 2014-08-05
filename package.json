@@ -38,6 +38,10 @@
     "gulp-plumber": "latest",
     "gulp-semiflat": "latest",
     "gulp-traceur-out": "latest",
-    "gulp-sass-alt": "latest"
+    "gulp-sass-alt": "latest",
+    "gulp-minify-html": "latest",
+    "gulp-ng-html2js": "latest",
+    "gulp-concat": "latest",
+    "gulp-inject": "latest"
   }
 }

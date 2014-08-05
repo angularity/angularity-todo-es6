@@ -3,8 +3,10 @@
   "version": "1.0.1",
   "private": true,
   "dependencies": {
-    "jquery": "latest",
-    "bootstrap": "latest",
+    "angular": "latest",
+    "angular-bootstrap": "latest",
+    "angular-ui-router": "latest",
+    "bootstrap-sass-official": "latest",
     "traceur-runtime": "latest"
   },
   "devDependencies": {
