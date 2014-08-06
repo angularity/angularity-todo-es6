@@ -1,5 +1,3 @@
-/* global localStorage:false */
-
 import bind from 'utility/bind';
 
 export default class MockStorage {
