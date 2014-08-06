@@ -1,18 +1,21 @@
 /* global angular:false */
 
+import bind from 'utility/bind';
 import extend from 'utility/extend';
 
 export default class TodoController {
 
-  constructor($scope, $filter, $stateParams, todoStorage) {
-    extend($scope, this);
+  constructor($scope, $filter, $state, storage) {
 
-    // private
-    this.todos_        = todoStorage.get();
-    this.newTodo_      = '';
-    this.$filter_      = $filter;
-    this.$stateParams_ = $stateParams;
-    this.todoStorage_  = todoStorage;
+    // bind and copy all prototype members
+    extend($scope, bind(this));
+
+    // private variables
+    this.todos_   = storage.get() || [ ];
+    this.newTodo_ = '';
+    this.$filter_ = $filter;
+    this.$state_  = $state;
+    this.storage_ = storage;
 
     // syncronise model with storage
     $scope.$watch('todos', $scope.watchTodos, true);
@@ -110,13 +113,13 @@ export default class TodoController {
     this.remainingCount_ = this.$filter_('filter')(this.todos_, { completed: false }).length;
     this.completedCount_ = this.todos_.length - this.remainingCount_;
     this.allChecked_     = !this.remainingCount_;
-    if (newValue !== oldValue) { // prevent unneeded calls to the local storage
-      this.todoStorage_.put(this.todos);
+    if (newValue !== oldValue) {
+      this.storage_.put(this.todos);
     }
   }
 
   onFilterChange() {
-    switch(this.$stateParams_.status) {
+    switch(this.$state_.params.status) {
       case 'active':
         this.status_       = 'active';
         this.statusFilter_ = { completed: false };

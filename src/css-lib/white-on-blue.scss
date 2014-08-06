@@ -12,3 +12,11 @@ body {
   color: white;
   @include linear-gradient(#2989d8 0%, #1e5799 100%);
 }
+
+a {
+  color: white;
+}
+
+input {
+  color: black;
+}
