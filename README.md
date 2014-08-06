@@ -65,8 +65,11 @@ It arguably duplicates the functionality of [es6ify](https://www.npmjs.org/packa
 implementation best suits your needs.
 
 This implementation presumes that:
+
  * You are using a small number of top-level Ecmascript 6 files for each HTML application
+ 
  * You want to fully resolve all imports at compile time.
+ 
  * Your library paths that may need to be discovered by globing.
 
 ## How it works
