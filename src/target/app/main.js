@@ -8,7 +8,7 @@ import LocalStorage           from 'storage/LocalStorage';
 
 angular.module('app', [ 'ui.router', 'ui.bootstrap', 'templates' ])
   .config(todoRoutes)
-  .directive('escape', EscapeKeyDirective.getInstance)
-  .directive('focus', FocusElementDirective.getInstance)
+  .directive('escape', EscapeKeyDirective.createFactory('escape'))
+  .directive('focus', FocusElementDirective.createFactory('focus'))
   .controller('TodoController', TodoController)
   .value('storage', new LocalStorage('todos-angularjs'));

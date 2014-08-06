@@ -8,7 +8,7 @@ import MockStorage            from 'storage/MockStorage';
 
 angular.module('app', [ 'ui.router', 'ui.bootstrap', 'templates' ])
   .config(todoRoutes)
-  .directive('escape', EscapeKeyDirective.getInstance)
-  .directive('focus', FocusElementDirective.getInstance)
+  .directive('escape', EscapeKeyDirective.createFactory('escape'))
+  .directive('focus', FocusElementDirective.createFactory('focus'))
   .controller('TodoController', TodoController)
   .value('storage', new MockStorage());
