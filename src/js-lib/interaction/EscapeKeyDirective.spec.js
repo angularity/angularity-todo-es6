@@ -10,7 +10,7 @@ describe('@', function() {
 
   var moduleName = Math.random().toString(16);
   angular.module(moduleName, [ ])
-    .directive('escape', EscapeKeyDirective.createFactory('escape'));
+    .directive('escape', EscapeKeyDirective.forAttribute('escape'));
 
   // our temporary module
   beforeEach(module(moduleName));

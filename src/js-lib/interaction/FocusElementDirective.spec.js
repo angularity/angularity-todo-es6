@@ -10,7 +10,7 @@ describe('@', function() {
   var timeout;
 
   angular.module('test', [ 'ngMock' ])
-    .directive('focus', FocusElementDirective.createFactory('focus'));
+    .directive('focus', FocusElementDirective.forAttribute('focus'));
 
   beforeEach(module('test'));
 
