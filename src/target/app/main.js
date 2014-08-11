@@ -10,5 +10,5 @@ angular.module('app', [ 'ui.router', 'ui.bootstrap', 'templates' ])
   .config(todoRoutes)
   .directive('escape', EscapeKeyDirective.forAttribute('escape'))
   .directive('focus', FocusElementDirective.forAttribute('focus'))
-  .controller('TodoController', TodoController)
+  .controller('todoController', TodoController)
   .value('storage', new LocalStorage('todos-angularjs'));
