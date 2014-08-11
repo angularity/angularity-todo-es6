@@ -8,12 +8,12 @@ describe('@', function() {
   var scope;
   var element;
 
-  var moduleName = Math.random().toString(16);
-  angular.module(moduleName, [ ])
+  // mappings
+  angular.module('@', [ ])
     .directive('escape', EscapeKeyDirective.forAttribute('escape'));
 
   // our temporary module
-  beforeEach(module(moduleName));
+  beforeEach(module('@'));
 
   // create the scope
   beforeEach(inject(function($rootScope) {

@@ -9,10 +9,11 @@ describe('@', function() {
   var element;
   var timeout;
 
-  angular.module('test', [ 'ngMock' ])
+  // mappings
+  angular.module('@', [ 'ngMock' ])
     .directive('focus', FocusElementDirective.forAttribute('focus'));
 
-  beforeEach(module('test'));
+  beforeEach(module('@'));
 
   // create the scope
   beforeEach(inject(function($rootScope) {
