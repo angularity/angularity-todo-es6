@@ -18,6 +18,7 @@
   "homepage": "https://github.com/bholloway/es6-modular",
   "dependencies": {
 	  "bower": "latest",
+    "bower-files": "latest",
     "combined-stream": "latest",
     "wiredep": "latest",
     "browser-sync": "latest",

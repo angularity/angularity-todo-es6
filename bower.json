@@ -3,13 +3,15 @@
   "version": "1.0.1",
   "private": true,
   "dependencies": {
+    "traceur-runtime": "latest",
+    "jQuery": "latest",
     "angular": "latest",
     "angular-bootstrap": "latest",
-    "angular-ui-router": "latest",
-    "bootstrap-sass-official": "latest",
-    "traceur-runtime": "latest"
+    "angular-ui-router": "latest"
   },
   "devDependencies": {
+    "bootstrap-sass-official": "latest",
+    "angular-mocks": "latest",
     "es6-modular-examplelib": "https://github.com/bholloway/es6-modular-examplelib.git"
   }
 }

@@ -8,6 +8,7 @@
   var combined    = require('combined-stream');
   var runSequence = require('run-sequence');
   var wiredep     = require('wiredep');
+  var bowerFiles  = require('bower-files');
   var browserSync = require('browser-sync');
   var bourbon     = require('node-bourbon');
 
@@ -16,8 +17,6 @@
 
   var TEMP          = '.build';
   var BOWER         = 'bower_components';
-
-  var BOWER_EXCLUDE = /bootstrap-sass-official/;
 
   var JS_LIB_BOWER  = 'bower_components/**/js-lib';
   var JS_LIB_LOCAL  = 'src/js-lib';
@@ -174,13 +173,13 @@
   gulp.task('js:unit', function() {
     return gulp.src(JS_LIB_LOCAL + '/**/*.spec.js')
       .pipe(traceur.concatJasmine({
-        '@': function (file) { return file.path; }
+        '@': function (file) { return file.path + ':0:0'; }
       }))
       .pipe(gulp.dest(TEMP))
       .pipe(traceur.transpile())
       .pipe(traceur.traceurReporter(CONSOLE_WIDTH))
       .pipe(traceur.karma({
-        files:      wiredep().js,
+        files:      bowerFiles({ dev: true }).js,
         frameworks: [ 'jasmine' ],
         reporters:  [ 'spec' ],
         browsers:   [ 'Chrome' ],
@@ -269,8 +268,7 @@
       .pipe(traceur.injectAppJS(JS_BUILD))
       .pipe(sass.injectAppCSS(CSS_BUILD))
       .pipe(wiredep.stream({
-        ignorePath: /..(?:\/\.{2})*/,  // use root relative path for bower directory
-        exclude:    BOWER_EXCLUDE
+        ignorePath: /..(?:\/\.{2})*/  // use root relative path for bower directory
       }))
       .pipe(gulp.dest(HTML_BUILD));
   });
