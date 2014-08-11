@@ -23,7 +23,7 @@ describe('@', function() {
   }));
 
   beforeEach(inject(function($compile) {
-    var form = $compile('<form id="form"><input escape="handler()"/></form></tpl>')(scope);
+    var form = $compile('<form id="form"><input escape="handler()"/></form>')(scope);
     element = form.find('input');
   }));
 
