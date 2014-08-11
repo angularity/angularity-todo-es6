@@ -11,4 +11,4 @@ angular.module('app', [ 'ui.router', 'ui.bootstrap', 'templates' ])
   .directive('escape', EscapeKeyDirective.createFactory('escape'))
   .directive('focus', FocusElementDirective.createFactory('focus'))
   .controller('TodoController', TodoController)
-  .value('storage', new MockStorage());
+  .service('storage', MockStorage);
