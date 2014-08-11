@@ -2,17 +2,18 @@
 
 import EscapeKeyDirective from 'interaction/EscapeKeyDirective';
 
-angular.module('test', [ ])
-  .directive('escape', EscapeKeyDirective.createFactory('escape'));
-
 describe('@', function() {
   'use strict';
 
   var scope;
   var element;
 
+  var moduleName = Math.random().toString(16);
+  angular.module(moduleName, [ ])
+    .directive('escape', EscapeKeyDirective.createFactory('escape'));
+
   // our temporary module
-  beforeEach(module('test'));
+  beforeEach(module(moduleName));
 
   // create the scope
   beforeEach(inject(function($rootScope) {
@@ -22,7 +23,7 @@ describe('@', function() {
   }));
 
   beforeEach(inject(function($compile) {
-    var form = $compile('<form name="form"><input escape="handler()"/></form></tpl>')(scope);
+    var form = $compile('<form id="form"><input escape="handler()"/></form></tpl>')(scope);
     element = form.find('input');
   }));
 
