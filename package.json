@@ -24,7 +24,7 @@
     "browser-sync": "latest",
     "node-bourbon": "latest",
     "run-sequence": "latest",
-    "karma": "~0.10",
+    "karma": "latest",
     "karma-jasmine": "~0.2.0",
     "karma-chrome-launcher": "latest",
     "karma-spec-reporter": "latest",
