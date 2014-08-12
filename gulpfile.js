@@ -121,7 +121,9 @@
       .append(gulp.src(JS_BUILD + '/**/*.js', opts)
         .pipe(plugins.semiflat(JS_BUILD)))
       .append(gulp.src(CSS_BUILD + '/**/*.css', opts)
-        .pipe(plugins.semiflat(CSS_BUILD)));
+        .pipe(plugins.semiflat(CSS_BUILD)))
+      .append(gulp.src(HTML_BUILD + '/**/*.html', opts)
+        .pipe(plugins.semiflat(HTML_BUILD)));
   }
 
   function releaseLibStream(opts) {
@@ -329,20 +331,22 @@
     console.log(hr('-', CONSOLE_WIDTH, 'release'));
     runSequence(
       'release:clean',
-      'release:assets',
+      'release:minify',
       'release:bower',
       'release:inject',
+      'release:version',
       done
     );
   });
 
   // clean the html build directory
   gulp.task('release:clean', function() {
-    return gulp.src(RELEASE + '/**')
-      .pipe(plugins.rimraf({ force: true }));
+    return gulp.src(RELEASE, { read: false })
+      .pipe(plugins.rimraf());
   });
 
-  gulp.task('release:assets', function() {
+  gulp.task('release:minify', function() {
+// TODO Minify
     return buildStream()
       .pipe(plugins.filter([ '**', '!**/dev/**' ]))
       .pipe(gulp.dest(RELEASE + '/' + RELEASE_APPS));
@@ -364,17 +368,24 @@
     function adjacentStylesheetTransform(filepath, file, index, length, targetFile) {
       return '<link rel="stylesheet" href="' + path.relative(path.dirname(targetFile.path), file.path) + '">';
     }
-    return htmlAppSrcStream()
-      .pipe(plugins.plumber())
+    return gulp.src(APPS + '/**/*.html')
       .pipe(plugins.filter([ '**', '!**/dev/**' ]))
-      .pipe(gulp.dest(APPS))
+      .pipe(plugins.plumber())
       .pipe(traceur.injectAppJS(APPS, { transform: adjacentScriptTransform }))
       .pipe(sass.injectAppCSS(APPS, { transform: adjacentStylesheetTransform }))
       .pipe(plugins.inject(releaseLibStream({ read: false }), {
         name:       'bower',
         ignorePath: RELEASE + '/'
       }))
+      .on('data', function(file) {
+        console.log(file.path);
+      })
       .pipe(gulp.dest(APPS));
+  });
+
+  // rename app folder with the content MD5 hash
+  gulp.task('release:version', function() {
+// TODO version
   });
 
   // WATCH ---------------------------------
