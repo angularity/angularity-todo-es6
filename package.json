@@ -17,10 +17,11 @@
   },
   "homepage": "https://github.com/bholloway/es6-modular",
   "dependencies": {
+"map-stream": "latest",
+"path": "latest",
 	  "bower": "latest",
     "bower-files": "latest",
     "combined-stream": "latest",
-    "wiredep": "latest",
     "browser-sync": "latest",
     "node-bourbon": "latest",
     "run-sequence": "latest",
