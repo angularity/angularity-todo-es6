@@ -18,7 +18,7 @@
   "undef": true,
   "unused": true,
   "strict": true,
-  "maxparams": 4,
+  "maxparams": 20,
   "maxdepth": 5,
   "maxlen": 120,
   "esnext": true
