@@ -24,12 +24,13 @@ describe('@', function() {
   beforeEach(inject(function($compile, $timeout) {
     var form = $compile('<form id="form"><input focus="value"/></form>')(scope);
     element = form.find('input');
-    timeout = timeout || $timeout;
+    timeout = $timeout;
     form.appendTo(document.body);
   }));
 
   afterEach(function() {
     element.remove();
+    timeout = null;
     scope   = null;
     element = null;
   });
