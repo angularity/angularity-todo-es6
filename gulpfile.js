@@ -33,16 +33,18 @@
   var PARTIALS_NAME = 'templates';
 
   var RELEASE       = 'release';
-  var RELEASE_LIBS  = 'html-libraries';
-  var RELEASE_APPS  = project.name;
+  var CDN_LIBS      = 'html-libraries';
+  var CDN_APPS      = project.name;
+  var RELEASE_LIBS  = RELEASE + '/' + CDN_LIBS;
+  var RELEASE_APPS  = RELEASE + '/' + CDN_APPS;
 
   var traceur;
   var sass;
   var bower;
 
+  // TODO move to node package
   var path = require('path');
   var mapStream = require('map-stream');
-
   function bowerDepsVersioned() {
     var bowerPackages = require('./bower.json').dependencies;
     var files         = [ ];
@@ -70,6 +72,31 @@
         });
       }
     };
+  }
+
+  // TODO move to node package
+  var fs = require('fs');
+  var crypto = require('crypto');
+  var through2 = require('through2');
+  function versionDirectory() {
+    var baseDirectory;
+    var hash = crypto.createHash('md5');
+    return through2.obj(function(file, encoding, done) {
+      var fileBase = path.resolve(file.base);
+      var error;
+      baseDirectory = baseDirectory || fileBase;
+      if (fileBase !== baseDirectory) {
+        error = new Error('base path must be the same in all files');
+      } else if (file.isBuffer()) {
+        hash.update(file.relative);
+        hash.update(file.contents);
+      } else {
+        hash.update(file.relative);
+      }
+      done(error, file);
+    }, function(done) {
+      fs.rename(RELEASE_APPS, RELEASE_APPS + '-' + hash.digest('hex'), done);
+    });
   }
 
   function jsLibStream(opts) {
@@ -116,18 +143,8 @@
       .pipe(plugins.semiflat(HTML_SRC));
   }
 
-  function buildStream(opts) {
-    return combined.create()
-      .append(gulp.src(JS_BUILD + '/**/*.js', opts)
-        .pipe(plugins.semiflat(JS_BUILD)))
-      .append(gulp.src(CSS_BUILD + '/**/*.css', opts)
-        .pipe(plugins.semiflat(CSS_BUILD)))
-      .append(gulp.src(HTML_BUILD + '/**/*.html', opts)
-        .pipe(plugins.semiflat(HTML_BUILD)));
-  }
-
   function releaseLibStream(opts) {
-    return gulp.src(RELEASE + '/' + RELEASE_LIBS + '/**/*', opts)
+    return gulp.src(RELEASE_LIBS + '/**/*', opts)
       .pipe(plugins.semiflat(RELEASE));
   }
 
@@ -331,8 +348,7 @@
     console.log(hr('-', CONSOLE_WIDTH, 'release'));
     runSequence(
       'release:clean',
-      'release:minify',
-      'release:bower',
+      [ 'release:js', 'release:css', 'release:html', 'release:bower' ],
       'release:inject',
       'release:version',
       done
@@ -345,47 +361,65 @@
       .pipe(plugins.rimraf());
   });
 
-  gulp.task('release:minify', function() {
-// TODO Minify
-    return buildStream()
-      .pipe(plugins.filter([ '**', '!**/dev/**' ]))
-      .pipe(gulp.dest(RELEASE + '/' + RELEASE_APPS));
+  gulp.task('release:js', function() {
+    return gulp.src([ JS_BUILD + '/**/*.js', '!**/dev/**' ])
+      .pipe(plugins.ngAnnotate({
+        add:           true,
+        single_quotes: true
+      }))
+      .pipe(plugins.uglify())
+      .pipe(gulp.dest(RELEASE_APPS));
+  });
+
+  gulp.task('release:css', function() {
+    return gulp.src([ CSS_BUILD + '/**/*.css', '!**/dev/**' ])
+      .pipe(gulp.dest(RELEASE_APPS));
+  });
+
+  gulp.task('release:html', function() {
+    return gulp.src([ HTML_BUILD + '/**/*.html', '!**/dev/**' ])
+      .pipe(gulp.dest(RELEASE_APPS));
   });
 
   // copy bower main elements to versioned directories in release
   gulp.task('release:bower', function() {
     return bower.src()
       .pipe(bower.version())
-      .pipe(gulp.dest(RELEASE + '/' + RELEASE_LIBS));
+      .pipe(gulp.dest(RELEASE_LIBS));
   });
 
   // inject dependencies into html and output to build directory
   gulp.task('release:inject', function() {
-    var APPS = RELEASE + '/' + RELEASE_APPS;
-    function adjacentScriptTransform(filepath, file, index, length, targetFile) {
-      return '<script src="' + path.relative(path.dirname(targetFile.path), file.path) + '"></script>';
+    function relativeTransform(filepath, file, index, length, targetFile) {
+      switch(path.extname(file.path)) {
+        case '.css':
+          return '<link rel="stylesheet" href="' + path.relative(path.dirname(targetFile.path), file.path) + '">';
+        case '.js':
+          return '<script src="' + path.relative(path.dirname(targetFile.path), file.path) + '"></script>';
+      }
     }
-    function adjacentStylesheetTransform(filepath, file, index, length, targetFile) {
-      return '<link rel="stylesheet" href="' + path.relative(path.dirname(targetFile.path), file.path) + '">';
-    }
-    return gulp.src(APPS + '/**/*.html')
+    return gulp.src(RELEASE_APPS + '/**/*.html')
       .pipe(plugins.filter([ '**', '!**/dev/**' ]))
       .pipe(plugins.plumber())
-      .pipe(traceur.injectAppJS(APPS, { transform: adjacentScriptTransform }))
-      .pipe(sass.injectAppCSS(APPS, { transform: adjacentStylesheetTransform }))
-      .pipe(plugins.inject(releaseLibStream({ read: false }), {
-        name:       'bower',
-        ignorePath: RELEASE + '/'
+      .pipe(traceur.injectAppJS(RELEASE_APPS, {
+        name:      'inject',
+        transform: relativeTransform
       }))
-      .on('data', function(file) {
-        console.log(file.path);
-      })
-      .pipe(gulp.dest(APPS));
+      .pipe(sass.injectAppCSS(RELEASE_APPS, {
+        name:      'inject',
+        transform: relativeTransform
+      }))
+      .pipe(plugins.inject(releaseLibStream({ read: false }), {
+        name:      'bower',
+        transform: relativeTransform
+      }))
+      .pipe(gulp.dest(RELEASE_APPS));
   });
 
   // rename app folder with the content MD5 hash
   gulp.task('release:version', function() {
-// TODO version
+    return gulp.src(RELEASE_APPS + '/**')
+      .pipe(versionDirectory());
   });
 
   // WATCH ---------------------------------

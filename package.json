@@ -19,6 +19,7 @@
   "dependencies": {
 "map-stream": "latest",
 "path": "latest",
+"through2": "1.1.1",
 	  "bower": "latest",
     "bower-files": "latest",
     "combined-stream": "latest",
@@ -34,7 +35,6 @@
     "gulp-filter": "latest",
     "gulp-rimraf": "latest",
     "gulp-jshint": "latest",
-    "gulp-sass": "latest",
     "gulp-watch": "latest",
     "gulp-watch-sequence": "latest",
     "gulp-plumber": "latest",
@@ -42,8 +42,10 @@
     "gulp-traceur-out": "latest",
     "gulp-sass-alt": "latest",
     "gulp-minify-html": "latest",
-    "gulp-ng-html2js": "latest",
     "gulp-concat": "latest",
-    "gulp-inject": "latest"
+    "gulp-ng-annotate": "latest",
+    "gulp-ng-html2js": "latest",
+    "gulp-inject": "latest",
+    "gulp-uglify": "latest"
   }
 }
