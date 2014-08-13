@@ -2,6 +2,8 @@
 (function() {
   'use strict';
 
+  var path        = require('path');
+
   var gulp        = require('gulp');
   var plugins     = require('gulp-load-plugins')();
   var combined    = require('combined-stream');
@@ -41,11 +43,12 @@
   var traceur;
   var sass;
   var bower;
+  var uglify;
 
   // TODO move to node package
-  var path = require('path');
-  var mapStream = require('map-stream');
   function bowerDepsVersioned() {
+    var path = require('path');
+    var through = require('through2');
     var bowerPackages = require('./bower.json').dependencies;
     var files         = [ ];
     var map           = { };
@@ -65,7 +68,7 @@
           .pipe(plugins.semiflat(process.cwd()));
       },
       version: function() {
-        return mapStream(function(file, done) {
+        return through.obj(function(file, encoding, done) {
           file.base = process.cwd();
           file.path = file.base + map[file.path];
           done(null, file);
@@ -75,13 +78,13 @@
   }
 
   // TODO move to node package
-  var fs = require('fs');
-  var crypto = require('crypto');
-  var through2 = require('through2');
   function versionDirectory() {
+    var fs = require('fs');
+    var crypto = require('crypto');
+    var through = require('through2');
     var baseDirectory;
     var hash = crypto.createHash('md5');
-    return through2.obj(function(file, encoding, done) {
+    return through.obj(function(file, encoding, done) {
       var fileBase = path.resolve(file.base);
       var error;
       baseDirectory = baseDirectory || fileBase;
@@ -99,6 +102,48 @@
     });
   }
 
+  // TODO move to node package
+  function uglify2() {
+    var through = require('through2');
+    var uglify = require('uglify-js');
+    var gutil  = require('gulp-util');
+    var reserved = [ ];
+    return {
+      reserve: function() {
+        return through.obj(function(file, encoding, done) {
+          var regexp = /(?:constructor|function.*)\s*\(\s*(.*)\s*\)/g;
+          var text   = file.contents.toString();
+          var analysis;
+          do {
+            analysis = regexp.exec(text);
+            if (analysis) {
+              reserved.push.apply(reserved, analysis[1].split(/\s*,\s*/));
+            }
+          } while(analysis);
+          done(null, file);
+        });
+      },
+      minify: function() {
+        return through.obj(function(file, encoding, done) {
+          var options = {
+            fromString: true,
+            mangle: {
+              except: reserved.join(',')
+            }
+          };
+          var output = uglify.minify(file.contents.toString(), options);
+          this.push(new gutil.File({
+            path:     file.path,
+            base:     file.base,
+            cwd:      file.cwd,
+            contents: new Buffer(output.code)
+          }));
+          done();
+        });
+      }
+    };
+  }
+
   function jsLibStream(opts) {
     return combined.create()
       .append(gulp.src(JS_LIB_BOWER + '/**/*.js', opts)                       // bower lib JS
@@ -108,29 +153,26 @@
   }
 
   function jsSrcStream(opts) {
-    return combined.create()
-      .append(gulp.src(JS_SRC + '/**/*.js', opts)             // local app JS
-        .pipe(plugins.semiflat(JS_SRC)));
+    return gulp.src(JS_SRC + '/**/*.js', opts)              // local app JS
+      .pipe(plugins.semiflat(JS_SRC));
   }
 
-  function jsSrcSpecStream(opts) {
-    return jsSrcStream(opts)                                  // local app JS
-      .append(gulp.src(JS_LIB_LOCAL + '/**/*.spec.js', opts)  // local lib SPEC JS
-        .pipe(plugins.semiflat(JS_LIB_LOCAL)));
+  function jsSpecStream(opts) {
+    return gulp.src(JS_LIB_LOCAL + '/**/*.spec.js', opts)   // local lib SPEC JS
+      .pipe(plugins.semiflat(JS_LIB_LOCAL));
   }
 
   function cssLibStream(opts) {
     return combined.create()
-      .append(gulp.src(CSS_LIB_BOWER + '/**/*.scss', opts)    // bower lib CSS
+      .append(gulp.src(CSS_LIB_BOWER + '/**/*.scss', opts)  // bower lib CSS
         .pipe(plugins.semiflat(CSS_LIB_BOWER)))
-      .append(gulp.src(CSS_LIB_LOCAL + '/**/*.scss', opts)    // local lib CSS overwrites
+      .append(gulp.src(CSS_LIB_LOCAL + '/**/*.scss', opts)  // local lib CSS overwrites
         .pipe(plugins.semiflat(CSS_LIB_LOCAL)));
   }
 
   function cssSrcStream(opts) {
-    return combined.create()
-      .append(gulp.src(CSS_SRC + '/**/*.scss', opts)  // local app CSS
-        .pipe(plugins.semiflat(CSS_SRC)));
+    return gulp.src(CSS_SRC + '/**/*.scss', opts)  // local app CSS
+      .pipe(plugins.semiflat(CSS_SRC));
   }
 
   function htmlPartialsSrcStream(opts) {
@@ -232,7 +274,9 @@
     return combined.create()
       .append(jsLibStream()
         .pipe(traceur.libraries()))
-      .append(jsSrcSpecStream()
+      .append(jsSrcStream()
+        .pipe(traceur.sources()))
+      .append(jsSpecStream()
         .pipe(traceur.sources()))
       .pipe(plugins.jshint())
       .pipe(traceur.jsHintReporter(CONSOLE_WIDTH));
@@ -348,6 +392,7 @@
     console.log(hr('-', CONSOLE_WIDTH, 'release'));
     runSequence(
       'release:clean',
+      'release:init',
       [ 'release:js', 'release:css', 'release:html', 'release:bower' ],
       'release:inject',
       'release:version',
@@ -361,13 +406,17 @@
       .pipe(plugins.rimraf());
   });
 
+  gulp.task('release:init', function() {
+    uglify = uglify2();
+    return combined.create()
+      .append(jsLibStream())
+      .append(jsSrcStream())
+      .pipe(uglify.reserve());
+  });
+
   gulp.task('release:js', function() {
     return gulp.src([ JS_BUILD + '/**/*.js', '!**/dev/**' ])
-      .pipe(plugins.ngAnnotate({
-        add:           true,
-        single_quotes: true
-      }))
-      .pipe(plugins.uglify())
+      .pipe(uglify.minify())
       .pipe(gulp.dest(RELEASE_APPS));
   });
 
@@ -391,11 +440,12 @@
   // inject dependencies into html and output to build directory
   gulp.task('release:inject', function() {
     function relativeTransform(filepath, file, index, length, targetFile) {
-      switch(path.extname(file.path)) {
+      var relative = plugins.slash(path.relative(path.dirname(targetFile.path), file.path));
+      switch(path.extname(relative)) {
         case '.css':
-          return '<link rel="stylesheet" href="' + path.relative(path.dirname(targetFile.path), file.path) + '">';
+          return '<link rel="stylesheet" href="' + relative + '">';
         case '.js':
-          return '<script src="' + path.relative(path.dirname(targetFile.path), file.path) + '"></script>';
+          return '<script src="' + relative + '"></script>';
       }
     }
     return gulp.src(RELEASE_APPS + '/**/*.html')

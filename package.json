@@ -17,9 +17,9 @@
   },
   "homepage": "https://github.com/bholloway/es6-modular",
   "dependencies": {
-"map-stream": "latest",
 "path": "latest",
 "through2": "1.1.1",
+"gulp-util": "latest",
 	  "bower": "latest",
     "bower-files": "latest",
     "combined-stream": "latest",
@@ -45,7 +45,8 @@
     "gulp-concat": "latest",
     "gulp-ng-annotate": "latest",
     "gulp-ng-html2js": "latest",
+    "gulp-slash": "latest",
     "gulp-inject": "latest",
-    "gulp-uglify": "latest"
+    "uglify-js": "latest"
   }
 }
