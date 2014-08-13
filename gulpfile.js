@@ -111,7 +111,7 @@
     return {
       reserve: function() {
         return through.obj(function(file, encoding, done) {
-          var regexp  = /\/\*{2}[^]@ngInject[^\/]*\*\/\n+.*\w+\s*\(\s*(.*)\s*\)\s*\{/gm;
+          var regexp  = /\/\*{2}[^]*@ngInject[^\/]*\*\/\n+.*\w+\s*\(\s*(.*)\s*\)\s*\{/gm;
           var text    = file.contents.toString();
           var pending = [ ];
           var analysis;
