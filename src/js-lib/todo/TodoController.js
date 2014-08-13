@@ -5,6 +5,7 @@ import extend from 'utility/extend';
 
 export default class TodoController {
 
+  /** @ngInject */
   constructor($scope, $filter, $state, storage) {
 
     // bind and copy all prototype members

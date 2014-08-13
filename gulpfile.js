@@ -111,15 +111,21 @@
     return {
       reserve: function() {
         return through.obj(function(file, encoding, done) {
-          var regexp = /(?:constructor|function.*)\s*\(\s*(.*)\s*\)/g;
-          var text   = file.contents.toString();
+          var regexp  = /\/\*{2}[^]@ngInject[^\/]*\*\/\n+.*\w+\s*\(\s*(.*)\s*\)\s*\{/gm;
+          var text    = file.contents.toString();
+          var pending = [ ];
           var analysis;
           do {
             analysis = regexp.exec(text);
             if (analysis) {
-              reserved.push.apply(reserved, analysis[1].split(/\s*,\s*/));
+              pending = pending.concat(analysis[1].split(/\s*,\s*/));
             }
           } while(analysis);
+// TODO better logging
+if (pending.length) {
+  console.log(file.relative, '\n@ngInject:', pending);
+}
+          reserved = reserved.concat(pending);
           done(null, file);
         });
       },

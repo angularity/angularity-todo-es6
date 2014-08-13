@@ -1,3 +1,4 @@
+/** @ngInject */
 export default function todoRoutes($stateProvider, $urlRouterProvider) {
   'use strict';
   $urlRouterProvider.otherwise('/');
