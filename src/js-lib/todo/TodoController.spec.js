@@ -59,7 +59,7 @@ describe('@', function() {
   // create the scope
   beforeEach(inject(function ($rootScope, $controller, $filter) {
     scope = $rootScope.$new();
-    $controller('TodoController as controller', {
+    $controller('TodoController', {
       '$scope':   scope,
       '$filter':  $filter,
       '$state':   state,
