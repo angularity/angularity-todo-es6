@@ -11,7 +11,7 @@ describe('@', function() {
   var state;
 
   angular.module('@', [ ])
-    .controller('todoController', TodoController);
+    .controller('TodoController', TodoController);
 
   beforeEach(function() {
     jasmine.addMatchers({
@@ -59,7 +59,7 @@ describe('@', function() {
   // create the scope
   beforeEach(inject(function ($rootScope, $controller, $filter) {
     scope = $rootScope.$new();
-    $controller('todoController', {
+    $controller('TodoController as controller', {
       '$scope':   scope,
       '$filter':  $filter,
       '$state':   state,
