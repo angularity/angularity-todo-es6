@@ -104,6 +104,9 @@ describe('@', function() {
     it('should have method markAll()', function () {
       expect(scope).toHaveMethod('markAll');
     });
+    it('should NOT contain private properties', function () {
+      expect(scope).not.toHaveProperty('todos_');
+    });
   });
 
   // TODO more characterisation of the scope
