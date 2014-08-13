@@ -6,6 +6,6 @@ export default function todoRoutes($stateProvider, $urlRouterProvider) {
     .state('home', {
       url:         '/:status',
       templateUrl: 'partials/todo.html',
-      controller:  'todoController'
+      controller:  'TodoController as controller'
     });
 }

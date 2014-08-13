@@ -246,7 +246,7 @@ if (pending.length) {
       [ 'js:clean', 'tmp:clean' ],
       'js:init',
       'js:build',
-      'tmp:clean',
+//      'tmp:clean',
       done
     );
   });
