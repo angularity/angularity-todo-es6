@@ -1,7 +1,7 @@
 {
   "name": "es6-modular",
-  "version": "1.0.1",
   "private": true,
+  "main": [ ],
   "dependencies": {
     "traceur-runtime": "latest",
     "jQuery": "latest",
