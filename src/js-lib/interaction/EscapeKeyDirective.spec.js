@@ -1,4 +1,5 @@
 /* globals angular, module, describe, beforeEach, inject, it, expect, spyOn */
+/* jshint sub:true */
 
 import EscapeKeyDirective from 'interaction/EscapeKeyDirective';
 
@@ -10,7 +11,7 @@ describe('@', function() {
 
   // mappings
   angular.module('@', [ ])
-    .directive('escape', EscapeKeyDirective.forAttribute('escape'));
+    ['directive']('escape', EscapeKeyDirective.forAttribute('escape'));
 
   // our temporary module
   beforeEach(module('@'));
