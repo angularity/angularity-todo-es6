@@ -18,7 +18,7 @@ With persistent storage
 
 With mock storage
 
-[http://localhost:8000/mockup/no-storage](http://localhost:8000/mockup/no-storage)
+[http://localhost:8000/dev/no-storage](http://localhost:8000/dev/no-storage)
 
 These applications are assembled from a library of components. Only the top level configuration is different.
 
