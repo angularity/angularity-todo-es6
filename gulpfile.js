@@ -170,16 +170,16 @@ if (pending.length) {
 
   function cssLibStream(opts) {
     return combined.create()
-      .append(gulp.src(CSS_LIB_BOWER + '/**/*.s?css', opts)  // bower lib CSS
+      .append(gulp.src(CSS_LIB_BOWER + '/**/*.scss', opts)            // bower lib CSS
         .pipe(plugins.semiflat(CSS_LIB_BOWER)))
-      .append(gulp.src(CSS_LIB_LOCAL + '/**/*.s?css', opts)  // local lib CSS overwrites
+      .append(gulp.src(CSS_LIB_LOCAL + '/**/*.scss', opts)            // local lib CSS overwrites
         .pipe(plugins.semiflat(CSS_LIB_LOCAL)))
-      .append(gulp.src(BOWER + '/**/bootstrap.s?css', opts)  // bower bootstrap SASS
-        .pipe(plugins.semiflat(BOWER + '/**/*')));
+      .append(gulp.src(BOWER + '/**/bootstrap/bootstrap.scss', opts)  // bower bootstrap SASS
+        .pipe(plugins.semiflat(BOWER + '/**/bootstrap')));
   }
 
   function cssSrcStream(opts) {
-    return gulp.src(CSS_SRC + '/**/*.s?css', opts)  // local app CSS
+    return gulp.src(CSS_SRC + '/**/*.scss', opts)  // local app CSS
       .pipe(plugins.semiflat(CSS_SRC));
   }
 
@@ -503,9 +503,9 @@ if (pending.length) {
       name: 'CSS',
       emitOnGlob: false,
       glob: [
-        CSS_LIB_BOWER + '/**/*.s?css',
-        CSS_LIB_LOCAL + '/**/*.s?css',
-        CSS_SRC       + '/**/*.s?css'
+        CSS_LIB_BOWER + '/**/*.scss',
+        CSS_LIB_LOCAL + '/**/*.scss',
+        CSS_SRC       + '/**/*.scss'
       ]
     }, queue.getHandler('css', 'html', 'reload')); // html will be needed in case previous injection failed
 
