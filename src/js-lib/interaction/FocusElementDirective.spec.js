@@ -1,4 +1,4 @@
-/* globals angular, module, describe, beforeEach, afterEach, inject, it, expect, document */
+/* globals angular, describe, beforeEach, afterEach, inject, it, expect, document */
 /* jshint sub:true */
 
 import FocusElementDirective from 'interaction/FocusElementDirective';
@@ -14,7 +14,7 @@ describe('@', function() {
   angular.module('@', [ 'ngMock' ])
     ['directive']('focus', FocusElementDirective.forAttribute('focus'));
 
-  beforeEach(module('@'));
+  beforeEach(angular.mock.module('@'));
 
   // create the scope
   beforeEach(inject(function($rootScope) {

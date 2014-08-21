@@ -1,4 +1,4 @@
-/* globals angular, module, describe, beforeEach, inject, it, expect, spyOn */
+/* globals angular, describe, beforeEach, inject, it, expect, spyOn */
 /* jshint sub:true */
 
 import EscapeKeyDirective from 'interaction/EscapeKeyDirective';
@@ -14,7 +14,7 @@ describe('@', function() {
     ['directive']('escape', EscapeKeyDirective.forAttribute('escape'));
 
   // our temporary module
-  beforeEach(module('@'));
+  beforeEach(angular.mock.module('@'));
 
   // create the scope
   beforeEach(inject(function($rootScope) {

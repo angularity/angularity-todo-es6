@@ -1,4 +1,4 @@
-/* globals angular, module, describe, beforeEach, inject, it, expect, jasmine */
+/* globals angular, describe, beforeEach, inject, it, expect, jasmine */
 
 import TodoController from 'todo/TodoController';
 import MockStorage    from 'storage/MockStorage';
@@ -42,7 +42,7 @@ describe('@', function() {
   });
 
   // our temporary module
-  beforeEach(module('@'));
+  beforeEach(angular.mock.module('@'));
 
   // mock storage
   beforeEach(function () {
