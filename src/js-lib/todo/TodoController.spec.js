@@ -11,7 +11,7 @@ describe('@', function() {
   var state;
 
   angular.module('@', [ ])
-    .controller('TodoController', TodoController);
+    ['controller']('TodoController', TodoController);
 
   beforeEach(function() {
     jasmine.addMatchers({
