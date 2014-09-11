@@ -16,7 +16,7 @@
   },
   "homepage": "https://github.com/bholloway/es6-modular",
   "dependencies": {
-    "gulp": "~3.8.7",
-	  "gulp-es6-modular": "git://github.com/bholloway/gulp-es6-modular#latest"
+    "gulp": "3.8.7",
+	  "gulp-es6-modular": "git://github.com/bholloway/gulp-es6-modular"
   }
 }
