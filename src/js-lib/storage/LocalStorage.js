@@ -1,4 +1,4 @@
-/* global localStorage:false */
+/* globals localStorage */
 
 import bind from 'utility/bind';
 
