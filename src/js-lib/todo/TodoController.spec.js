@@ -1,4 +1,5 @@
 /* globals angular, describe, beforeEach, inject, it, expect, jasmine */
+/* jshint sub:true */
 
 import TodoController from 'todo/TodoController';
 import MockStorage    from 'storage/MockStorage';

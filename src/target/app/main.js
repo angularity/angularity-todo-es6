@@ -12,3 +12,4 @@ angular.module('app', [ 'ui.router', 'ui.bootstrap', 'templates' ])
   .directive('focus', FocusElementDirective.forAttribute('focus'))
   .controller('TodoController', TodoController)
   .value('storage', new LocalStorage('todos-angularjs'));
+

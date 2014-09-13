@@ -11,7 +11,7 @@ describe('@', function() {
   var timeout;
 
   // mappings
-  angular.module('@', [ 'ngMock' ])
+  angular.module('@', [ ])
     ['directive']('focus', FocusElementDirective.forAttribute('focus'));
 
   beforeEach(angular.mock.module('@'));
