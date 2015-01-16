@@ -1,4 +1,4 @@
-import bind from 'utility/bind';
+import bind from 'examplelib/utility/bind';
 
 export default class MockStorage {
 

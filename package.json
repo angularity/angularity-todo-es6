@@ -1,22 +1,7 @@
 {
   "name": "es6-modular",
-  "description": "Proof of concept for es6 modules from source mixed with bower packages",
   "private": true,
-  "scripts": {
-    "postinstall": "bower install"
-  },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/bholloway/es6-modular"
-  },
-  "author": "Ben Holloway",
-  "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/bholloway/es6-modular/issues"
-  },
-  "homepage": "https://github.com/bholloway/es6-modular",
   "dependencies": {
-    "gulp": "3.8.7",
-	  "gulp-es6-modular": "git://github.com/bholloway/gulp-es6-modular#0.0.5"
+    "node-bourbon": "latest"
   }
 }

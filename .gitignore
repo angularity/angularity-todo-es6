@@ -1,0 +1,7 @@
+/.idea
+/bower_components
+/node_modules/*
+!/node_modules/examplelib
+/app-build
+/app-release
+/app-test

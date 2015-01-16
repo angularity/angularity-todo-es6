@@ -1,6 +1,6 @@
 /* globals localStorage */
 
-import bind from 'utility/bind';
+import bind from 'examplelib/utility/bind';
 
 /**
  * <p>Store a single value in HTML5 local storage.</p>

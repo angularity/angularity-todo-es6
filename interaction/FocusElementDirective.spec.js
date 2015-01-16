@@ -1,7 +1,7 @@
 /* globals angular, describe, beforeEach, afterEach, inject, it, expect, document */
 /* jshint sub:true */
 
-import FocusElementDirective from 'interaction/FocusElementDirective';
+import FocusElementDirective from 'examplelib/interaction/FocusElementDirective';
 
 describe('@', function() {
   'use strict';

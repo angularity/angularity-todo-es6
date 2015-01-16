@@ -1,16 +1,16 @@
 /* global angular:false */
 
-import bind from 'utility/bind';
-import extend from 'utility/extend';
+import bind from 'examplelib/utility/bind';
+import extend from 'examplelib/utility/extend';
 
 /**
  * <p>Controller for the to-do application.</p>
+ * @ngInject
  */
 export default class TodoController {
 
   /**
    * @constructor
-   * @ngInject
    */
   constructor($scope, $filter, $state, storage) {
 

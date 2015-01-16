@@ -1,3 +1,6 @@
+import template       from './partial/todo.html';
+import TodoController from './controller/TodoController';
+
 /**
  * <p>Routing for the to-do app.</p>
  * @ngInject
@@ -9,8 +12,8 @@ export default function todoRoutes($stateProvider, $urlRouterProvider) {
   $urlRouterProvider.otherwise('/');
   $stateProvider
     .state('home', {
-      url:         '/:status',
-      templateUrl: 'partials/todo.html',
-      controller:  'TodoController'
+      url:        '/:status',
+      template:   template,
+      controller: TodoController
     });
 }
