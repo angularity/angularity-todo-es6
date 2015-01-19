@@ -2,6 +2,7 @@
   "name": "es6-modular",
   "private": true,
   "dependencies": {
+    "core.js": "latest",
     "jQuery": "latest",
     "angular": "latest",
     "bootstrap-sass-official": ">=3.3.0",
