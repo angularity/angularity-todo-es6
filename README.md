@@ -1,4 +1,4 @@
-#es6-modular
+#angularity-todo-es6
 
 Example project for Angularity. Private libraries for JS, CSS, HTML loaded by NPM or Bower.
 

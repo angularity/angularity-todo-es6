@@ -1,5 +1,5 @@
 {
-  "name": "es6-modular",
+  "name": "angularity-todo-es6",
   "private": true,
   "dependencies": {
     "node-bourbon": "latest"
