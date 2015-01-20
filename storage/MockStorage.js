@@ -1,10 +1,10 @@
-import bind from 'examplelib/utility/bind';
+import bind from 'es6-class-util/bind';
 
 export default class MockStorage {
 
   constructor() {
 
-    // bind and copy all prototype members
+    // bind all prototype members
     bind(this);
 
     // private variables

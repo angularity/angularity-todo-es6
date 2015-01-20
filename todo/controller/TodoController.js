@@ -1,7 +1,7 @@
 /* global angular:false */
 
-import bind from 'examplelib/utility/bind';
-import extend from 'examplelib/utility/extend';
+import bind   from 'es6-class-util/bind';
+import extend from 'es6-class-util/extend';
 
 /**
  * <p>Controller for the to-do application.</p>

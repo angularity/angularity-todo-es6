@@ -1,7 +1,7 @@
 /* globals localStorage */
 
 import MockStorage from './MockStorage';
-import bind        from 'examplelib/utility/bind';
+import bind        from 'es6-class-util/bind';
 
 /**
  * <p>Store a single value in HTML5 local storage.</p>
@@ -14,7 +14,7 @@ export default class LocalStorage extends MockStorage {
    */
   constructor(storageID) {
 
-    // bind and copy all prototype members
+    // bind all prototype members
     bind(this);
 
     // private variables

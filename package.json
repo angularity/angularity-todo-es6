@@ -2,6 +2,7 @@
   "name": "angularity-todo-es6",
   "private": true,
   "dependencies": {
-    "node-bourbon": "latest"
+    "node-bourbon": "latest",
+    "es6-class-util": "latest"
   }
 }
