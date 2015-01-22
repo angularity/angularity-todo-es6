@@ -14,7 +14,7 @@ and serves applications.
 
 With persistent storage
 
-[http://localhost:1419/app](http://localhost:1419/)
+[http://localhost:1419/](http://localhost:1419/)
 
 With mock storage
 
