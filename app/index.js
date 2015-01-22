@@ -1,9 +1,9 @@
 /* global angular:false */
 
-import todoRoutes             from '../todo/todoRoutes';
-import EscapeKeyDirective     from 'examplelib/interaction/EscapeKeyDirective';
-import FocusElementDirective  from 'examplelib/interaction/FocusElementDirective';
-import LocalStorage           from '../storage/LocalStorage';
+import todoRoutes             from '../todo/todo-routes';
+import EscapeKeyDirective     from 'examplelib/interaction/escape-key-directive';
+import FocusElementDirective  from 'examplelib/interaction/focus-element-directive';
+import LocalStorage           from '../storage/local-storage';
 
 angular.module('app', [ 'ui.router', 'ui.bootstrap' ])
   .config(todoRoutes)

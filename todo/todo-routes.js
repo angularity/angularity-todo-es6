@@ -1,5 +1,5 @@
-import template       from './partial/todo.html';
-import TodoController from './controller/TodoController';
+import template       from './view/todo.html';
+import TodoController from './controller/todo-controller';
 
 /**
  * <p>Routing for the to-do app.</p>

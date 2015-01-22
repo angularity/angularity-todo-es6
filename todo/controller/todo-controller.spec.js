@@ -1,8 +1,8 @@
 /* globals angular, describe, beforeEach, inject, it, expect, jasmine */
 /* jshint sub:true */
 
-import TodoController from './TodoController';
-import MockStorage    from '../../storage/MockStorage';
+import TodoController from './todo-controller';
+import MockStorage    from '../../storage/mock-storage';
 
 describe('@', function() {
   'use strict';

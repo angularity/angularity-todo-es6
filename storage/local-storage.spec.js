@@ -1,6 +1,6 @@
 /* globals describe, beforeEach, afterEach, it, expect, jasmine, localStorage */
 
-import LocalStorage from './LocalStorage';
+import LocalStorage from './local-storage';
 
 var randomStrings = [ ];
 function randomString() {

@@ -1,6 +1,6 @@
 /* globals localStorage */
 
-import MockStorage from './MockStorage';
+import MockStorage from './mock-storage';
 import bind        from 'es6-class-util/bind';
 
 /**
