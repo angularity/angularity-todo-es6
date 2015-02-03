@@ -1,5 +1,3 @@
-/* global angular:false */
-
 import todoRoutes             from '../todo/todo-routes';
 import EscapeKeyDirective     from 'examplelib/interaction/escape-key-directive';
 import FocusElementDirective  from 'examplelib/interaction/focus-element-directive';

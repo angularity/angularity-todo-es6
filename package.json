@@ -1,5 +1,6 @@
 {
   "name": "angularity-todo-es6",
+  "version": "0.0.0",
   "private": true,
   "dependencies": {
     "node-bourbon": "latest",

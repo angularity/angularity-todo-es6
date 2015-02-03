@@ -1,5 +1,4 @@
-/* globals angular, describe, beforeEach, inject, it, expect, jasmine */
-/* jshint sub:true */
+/* globals describe, beforeEach, inject, it, expect, jasmine */
 
 import TodoController from './todo-controller';
 import MockStorage    from '../../storage/mock-storage';
@@ -12,7 +11,7 @@ describe('@', function() {
   var state;
 
   angular.module('@', [ ])
-    ['controller']('TodoController', TodoController);
+    .controller('TodoController', TodoController);
 
   beforeEach(function() {
     jasmine.addMatchers({

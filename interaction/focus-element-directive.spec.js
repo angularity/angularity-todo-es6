@@ -1,7 +1,6 @@
-/* globals angular, describe, beforeEach, afterEach, inject, it, expect, document */
-/* jshint sub:true */
+/* globals describe, beforeEach, afterEach, inject, it, expect, document */
 
-import FocusElementDirective from 'examplelib/interaction/FocusElementDirective';
+import FocusElementDirective from 'examplelib/interaction/focus-element-directive';
 
 describe('@', function() {
   'use strict';
@@ -12,7 +11,7 @@ describe('@', function() {
 
   // mappings
   angular.module('@', [ ])
-    ['directive']('focus', FocusElementDirective.forAttribute('focus'));
+    .directive('focus', FocusElementDirective.forAttribute('focus'));
 
   beforeEach(angular.mock.module('@'));
 
