@@ -13,9 +13,6 @@
   "devDependencies": {
     "angular-mocks": "latest"
   },
-  "bundledDependencies": [
-    "examplelib"
-  ],
   "resolutions": {
     "angular": "1.2.28"
   }
