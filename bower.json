@@ -4,7 +4,7 @@
   "private": true,
   "dependencies": {
     "core.js": "latest",
-    "jQuery": "latest",
+    "jquery": "latest",
     "angular": "latest",
     "bootstrap-sass-official": "3.3.0",
     "angular-bootstrap": "latest",
